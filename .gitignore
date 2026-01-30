@@ -24,6 +24,9 @@ dist-ssr/
 build/
 /.parcel-cache/
 
+# Archive folder
+archive/
+
 # Environment files
 .env
 .env.*
