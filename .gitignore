@@ -1,55 +1,39 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules
+.pnp
+.pnp.js
 
-# Dependency directories
-node_modules/
+# Testing
+coverage
 
-# Build outputs
-dist/
-dist-ssr/
-build/
-/.parcel-cache/
-
-# Archive folder
-archive/
-
-# Environment files
-.env
-.env.*
-
-# OS files
-.DS_Store
-
-# Editor directories and files
-.vscode/
-!.vscode/extensions.json
-.idea/
-
-# Caches, coverage
-.cache/
-coverage/
-
-# Local audit / tooling
-.cursor/
-
-# Certificates, keys
-*.pem
-*.key
-*.crt
+# Production
+dist
+build
 
 # Misc
-*.local
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
