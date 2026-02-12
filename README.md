@@ -57,6 +57,15 @@ This project uses a full JavaScript stack from frontend to backend.
 
 ---
 
+## 🚀 Deployment (Vercel)
+
+This project is configured for seamless deployment on Vercel.
+
+1.  Push your code to GitHub.
+2.  Import the project into Vercel.
+3.  Add your environment variables (`MONGO_URI`, `JWT_SECRET`) in the Vercel Project Settings.
+4.  Deploy!
+
 ## 📸 Screenshots
 
 *(Replace these links with actual screenshots of your application pages. It's crucial for showcasing your work!)*
