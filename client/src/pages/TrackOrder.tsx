@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,7 +6,7 @@ import {
   Clock,
   Truck,
   CheckCircle,
-  MapPin,
+  XCircle,
   Search,
   ArrowLeft,
   Calendar,
@@ -34,97 +34,126 @@ const TrackOrder = () => {
   const [searchedOrderId, setSearchedOrderId] = useState(initialOrderId);
   const [isSearching, setIsSearching] = useState(false);
 
-  const { getOrderById } = useOrderStore();
+  const { orders, fetchOrders } = useOrderStore();
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Automatically track the latest order if no order ID is in search params
+  useEffect(() => {
+    if (!initialOrderId && orders.length > 0) {
+      // Sort orders by date to find the latest
+      const latestOrder = [...orders].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+
+      if (latestOrder) {
+        setOrderId(latestOrder._id);
+        setSearchedOrderId(latestOrder._id);
+      }
+    }
+  }, [initialOrderId, orders]);
 
   // Fetch real order data if available, otherwise fallback to mock simulation
   const orderData = useMemo(() => {
     if (!searchedOrderId) return null;
 
-    const realOrder = getOrderById(searchedOrderId);
+    // Flexible search: match full ID, or last 8 characters (case-insensitive, ignoring '#')
+    const cleanSearchId = searchedOrderId.replace('#', '').toUpperCase();
+    const realOrder = orders.find(o =>
+      o._id === searchedOrderId ||
+      o._id.toUpperCase() === cleanSearchId ||
+      o._id.slice(-8).toUpperCase() === cleanSearchId
+    );
 
     if (realOrder) {
       const getStatusSteps = (status: string) => {
         const steps = [
-          { id: 'placed', label: 'Order Placed', desc: 'Received and confirmed', icon: Package },
-          { id: 'processing', label: 'Processing', desc: 'Preparing for shipment', icon: Clock },
-          { id: 'shipped', label: 'Shipped', desc: 'Package is on its way', icon: Truck },
-          { id: 'delivered', label: 'Delivered', desc: 'Delivered to your address', icon: CheckCircle },
+          { id: 'Placed', label: 'Order Placed', desc: 'Received and confirmed', icon: Package },
+          { id: 'Processing', label: 'Processing', desc: 'Preparing for shipment', icon: Clock },
+          { id: 'Shipped', label: 'Shipped', desc: 'Package is on its way', icon: Truck },
+          { id: 'Delivered', label: 'Delivered', desc: 'Delivered to your address', icon: CheckCircle },
         ];
 
-        const currentIndex = ['placed', 'processing', 'shipped', 'delivered'].indexOf(status);
+        const statuses = ['Placed', 'Processing', 'Shipped', 'Delivered'];
+        const currentIndex = statuses.indexOf(status);
 
-        const formatDate = (dateInput: any) => {
+        const formatDate = (dateInput: string | number | Date | undefined): string => {
           if (!dateInput) return 'Pending';
           try {
             const date = new Date(dateInput);
-            return isNaN(date.getTime()) ? dateInput : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            if (isNaN(date.getTime())) return String(dateInput);
+            return date.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
           } catch (e) {
-            return dateInput;
+            return String(dateInput);
           }
         };
 
-        return steps.map((step, idx) => ({
-          ...step,
-          done: idx <= currentIndex,
-          date: idx === 0 ? formatDate(realOrder.placedAt || realOrder.createdAt) : (idx <= currentIndex ? 'Completed' : 'Pending'),
-          description: step.desc
-        }));
+        return steps.map((step, idx) => {
+          const isDone = idx <= currentIndex;
+          let stepDate = 'Pending';
+
+          if (idx === 0) {
+            stepDate = formatDate(realOrder.createdAt);
+          } else if (idx === currentIndex) {
+            stepDate = formatDate(realOrder.updatedAt || new Date());
+          } else if (idx < currentIndex) {
+            stepDate = 'Completed';
+          }
+
+          return {
+            ...step,
+            done: isDone,
+            date: stepDate,
+            description: step.desc
+          };
+        });
       };
 
       const getCarrier = (methodName: string) => {
         if (!methodName) return 'Delhivery';
-        if (methodName.includes('Overnight')) return 'FedEx Priority';
-        if (methodName.includes('Express')) return 'Blue Dart Express';
+        const name = methodName.toLowerCase();
+        if (name.includes('overnight')) return 'FedEx Priority';
+        if (name.includes('express')) return 'Blue Dart Express';
         return 'Delhivery';
       };
 
-      const formatEstimatedDate = (dateInput: any) => {
-        if (!dateInput) return 'TBD';
-        try {
-          const date = new Date(dateInput);
-          return isNaN(date.getTime()) ? dateInput : date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          });
-        } catch (e) {
-          return dateInput;
+      const getStatusMessage = (status: string) => {
+        switch (status) {
+          case 'Placed': return "We've received your order and are confirming details.";
+          case 'Processing': return "Your order is being prepared for shipment.";
+          case 'Shipped': return "Your package is on its way!";
+          case 'Delivered': return "Your package has been delivered successfully.";
+          case 'Cancelled': return "This order has been cancelled.";
+          default: return "Your package is on its way!";
         }
       };
 
+      const formatEstimatedDate = (dateInput: string | undefined): string => {
+        if (dateInput && dateInput !== 'TBD') return dateInput;
+        // Fallback for older orders or missing data
+        return "5-7 business days";
+      };
+
       return {
-        orderId: realOrder._id || realOrder.id,
-        status: realOrder.status,
-        carrier: getCarrier(realOrder.shippingMethodName || 'Standard'),
-        trackingNumber: realOrder.trackingNumber || (realOrder.status === 'placed' ? 'Assigning soon' : `LXR${(realOrder._id || '').includes('-') ? (realOrder._id || '').split('-')[1] : (realOrder._id || '').substring(0, 8).toUpperCase()}99`),
+        orderId: `#${(realOrder._id || realOrder.id || '').slice(-8).toUpperCase()}`,
+        status: realOrder.orderStatus,
+        carrier: getCarrier(realOrder.shippingMethodName || ''),
+        trackingNumber: realOrder.trackingNumber || (realOrder.orderStatus === 'Placed' ? 'Assigning soon' : `LXR${realOrder._id.substring(0, 8).toUpperCase()}99`),
         estimatedDelivery: formatEstimatedDate(realOrder.estimatedDelivery),
-        steps: getStatusSteps(realOrder.status)
+        steps: getStatusSteps(realOrder.orderStatus),
+        statusMessage: getStatusMessage(realOrder.orderStatus)
       };
     }
 
-    // fallback simulation for demo purposes
-    const today = new Date();
-    const orderDate = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000);
-    const estimatedDelivery = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
-
-    return {
-      orderId: searchedOrderId,
-      status: 'shipped',
-      carrier: 'Blue Dart Express',
-      trackingNumber: '881234567890',
-      estimatedDelivery: estimatedDelivery.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-      }),
-      steps: [
-        { id: 'placed', label: 'Order Placed', description: 'Received and confirmed', date: orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), done: true, icon: Package },
-        { id: 'processing', label: 'Processing', description: 'Preparing for shipment', date: 'Completed', done: true, icon: Clock },
-        { id: 'shipped', label: 'Shipped', description: 'Package is on its way', date: 'Completed', done: true, icon: Truck },
-        { id: 'delivered', label: 'Delivered', description: 'Delivered to your address', date: 'Pending', done: false, icon: CheckCircle },
-      ],
-    };
-  }, [searchedOrderId, getOrderById]);
+    return null;
+  }, [searchedOrderId, orders]);
 
   const handleSearch = async () => {
     if (!orderId.trim()) return;
@@ -204,7 +233,6 @@ const TrackOrder = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              {/* Order Info Card */}
               <div className="bg-card rounded-3xl p-6 border border-border">
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <div className="flex items-center gap-3">
@@ -222,7 +250,7 @@ const TrackOrder = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Carrier</p>
-                      <p className="font-semibold text-sm">{orderData.carrier}</p>
+                      <p className="font-semibold text-sm">{orderData.status === 'Cancelled' ? 'N/A' : orderData.carrier}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -231,86 +259,100 @@ const TrackOrder = () => {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Tracking #</p>
-                      <p className="font-semibold text-sm truncate max-w-[140px]">{orderData.trackingNumber}</p>
+                      <p className="font-semibold text-sm truncate max-w-[140px]">{orderData.status === 'Cancelled' ? 'Void' : orderData.trackingNumber}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                      <Calendar size={18} className="text-green-500" />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${orderData.status === 'Cancelled' ? 'bg-destructive/10' : 'bg-green-500/10'}`}>
+                      <Calendar size={18} className={orderData.status === 'Cancelled' ? 'text-destructive' : 'text-green-500'} />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Est. Delivery</p>
-                      <p className="font-semibold text-sm text-green-600">{orderData.estimatedDelivery}</p>
+                      <p className="text-xs text-muted-foreground">{orderData.status === 'Cancelled' ? 'Status' : 'Est. Delivery'}</p>
+                      <p className={`font-semibold text-sm ${orderData.status === 'Cancelled' ? 'text-destructive' : 'text-green-600'}`}>
+                        {orderData.status === 'Cancelled' ? 'Cancelled' : orderData.estimatedDelivery}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Status Message */}
-                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                <div className={`p-4 rounded-2xl border ${orderData.status === 'Cancelled' ? 'bg-destructive/5 border-destructive/10' : 'bg-primary/5 border-primary/10'}`}>
                   <div className="flex items-center gap-3">
                     <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
+                      animate={orderData.status === 'Cancelled' ? {} : { scale: [1, 1.1, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
-                      className="w-3 h-3 rounded-full bg-green-500"
+                      className={`w-3 h-3 rounded-full ${orderData.status === 'Cancelled' ? 'bg-destructive' : 'bg-green-500'}`}
                     />
-                    <p className="font-medium text-primary">Your package is on its way!</p>
+                    <p className={`font-medium ${orderData.status === 'Cancelled' ? 'text-destructive' : 'text-primary'}`}>
+                      {orderData.statusMessage}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Timeline */}
-              <div className="bg-card rounded-3xl p-8 border border-border">
-                <h2 className="font-display text-xl font-semibold mb-8">Shipment Progress</h2>
+              {/* Timeline - Only show if not cancelled */}
+              {orderData.status !== 'Cancelled' ? (
+                <div className="bg-card rounded-3xl p-8 border border-border">
+                  <h2 className="font-display text-xl font-semibold mb-8">Shipment Progress</h2>
 
-                <div className="relative">
-                  {/* Progress Line */}
-                  <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-border">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{
-                        height: `${(orderData.steps.filter(s => s.done).length / orderData.steps.length) * 100}%`
-                      }}
-                      transition={{ duration: 0.8, delay: 0.3 }}
-                      className="w-full bg-primary"
-                    />
-                  </div>
-
-                  <div className="space-y-8">
-                    {orderData.steps.map((step, index) => (
+                  <div className="relative">
+                    {/* Progress Line */}
+                    <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-border">
                       <motion.div
-                        key={step.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-4 relative"
-                      >
+                        initial={{ height: 0 }}
+                        animate={{
+                          height: `${(orderData.steps.filter(s => s.done).length / orderData.steps.length) * 100}%`
+                        }}
+                        transition={{ duration: 0.8, delay: 0.3 }}
+                        className="w-full bg-primary"
+                      />
+                    </div>
+
+                    <div className="space-y-8">
+                      {orderData.steps.map((step, index) => (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: index * 0.15 }}
-                          className={`w-12 h-12 rounded-full flex items-center justify-center z-10 ${step.done
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-secondary text-muted-foreground'
-                            }`}
+                          key={step.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-start gap-4 relative"
                         >
-                          {step.done ? <CheckCircle size={20} /> : <step.icon size={20} />}
-                        </motion.div>
-                        <div className="flex-1 pt-1">
-                          <div className="flex items-center justify-between">
-                            <p className={`font-semibold ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {step.label}
-                            </p>
-                            <span className={`text-sm ${step.done ? 'text-primary' : 'text-muted-foreground'}`}>
-                              {step.date}
-                            </span>
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: index * 0.15 }}
+                            className={`w-12 h-12 rounded-full flex items-center justify-center z-10 ${step.done
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-secondary text-muted-foreground'
+                              }`}
+                          >
+                            {step.done ? <CheckCircle size={20} /> : <step.icon size={20} />}
+                          </motion.div>
+                          <div className="flex-1 pt-1">
+                            <div className="flex items-center justify-between">
+                              <p className={`font-semibold ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {step.label}
+                              </p>
+                              <span className={`text-sm ${step.done ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {step.date}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-destructive/5 rounded-3xl p-12 border border-destructive/10 text-center">
+                  <XCircle size={48} className="text-destructive mx-auto mb-4" />
+                  <h2 className="font-display text-xl font-semibold text-destructive mb-2">Order Cancelled</h2>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    This order has been cancelled and is no longer being processed. If you believe this is an error, please contact our support team.
+                  </p>
+                </div>
+              )}
 
               {/* Help Section */}
               <motion.div
@@ -322,6 +364,25 @@ const TrackOrder = () => {
                   Contact Support
                 </Link>
               </motion.div>
+            </motion.div>
+          ) : searchedOrderId ? (
+            <motion.div
+              variants={fadeUp}
+              className="text-center py-16 bg-card rounded-3xl border border-destructive/20"
+            >
+              <XCircle size={64} className="mx-auto text-destructive/30 mb-6" />
+              <h3 className="font-display text-xl font-semibold mb-2">Order Not Found</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                We couldn't find an order with ID <span className="font-semibold text-foreground">"{searchedOrderId}"</span>.
+                Please check the ID in your email confirmation and try again.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => { setOrderId(''); setSearchedOrderId(''); }}
+                className="mt-6"
+              >
+                Clear Search
+              </Button>
             </motion.div>
           ) : (
             <motion.div

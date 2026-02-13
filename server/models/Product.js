@@ -5,18 +5,21 @@ const mongoose = require('mongoose');
 // 1. Review Schema (Mirrors your frontend Review interface)
 const reviewSchema = new mongoose.Schema(
     {
-        id: { type: String, required: true }, // The 'r1', 'r2' IDs from mock data
+        user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
         userName: { type: String, required: true },
-        userAvatar: { type: String }, // Optional field
+        userAvatar: { type: String },
         rating: { type: Number, required: true, min: 0, max: 5 },
         comment: { type: String, required: true },
-        date: { type: String, required: true }, // Stores dates as strings like "YYYY-MM-DD"
-        verified: { type: Boolean, default: false },
+        images: [{ type: String }],
+        orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+        date: { type: Date, default: Date.now },
+        verified: { type: Boolean, default: true },
+        adminReply: { type: String },
+        adminReplyDate: { type: Date },
     },
-    { _id: false } // Tells Mongoose NOT to create a separate unique _id for each review sub-document
+    { timestamps: true }
 );
 
-// 2. Color Schema (Mirrors your frontend ProductColor interface)
 const colorSchema = new mongoose.Schema(
     {
         name: { type: String, required: true }, // e.g., "Midnight Black"
@@ -24,8 +27,19 @@ const colorSchema = new mongoose.Schema(
         image: { type: String, required: true }, // Main image for this color variant
         images: [{ type: String }], // Array of additional gallery images for this specific color
         price: { type: Number }, // Optional override price for this specific color variant
+        originalPrice: { type: Number }, // Optional comparative price for this specific color variant
     },
     { _id: false } // We don't need separate _ids for color sub-documents either
+);
+
+// 3. Variant Stock Schema (Tracks stock per color + size combination)
+const variantStockSchema = new mongoose.Schema(
+    {
+        color: { type: String, required: true }, // Color name (e.g., "Midnight Black")
+        size: { type: String, required: true }, // Size (e.g., "M")
+        stock: { type: Number, required: true, default: 0, min: 0 }, // Stock count for this variant
+    },
+    { _id: false }
 );
 
 // --- Main Product Schema ---
@@ -103,6 +117,9 @@ const productSchema = new mongoose.Schema(
             default: 0,
             min: 0,
         },
+        // Variant-level stock tracking (per color + size combination)
+        // If this array has entries, it takes precedence over the global 'stock' field
+        variantStock: [variantStockSchema],
     },
     {
         timestamps: true, // Mongoose automatically manages 'createdAt' and 'updatedAt' fields

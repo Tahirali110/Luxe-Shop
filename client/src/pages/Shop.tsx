@@ -49,7 +49,7 @@ const Shop = () => {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
 
-    if (category && categories.includes(category as any)) {
+    if (category && (categories as readonly string[]).includes(category)) {
       setSelectedCategory(category);
     } else if (!category) {
       setSelectedCategory('All');

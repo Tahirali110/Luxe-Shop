@@ -23,9 +23,16 @@ export interface User {
     name: string;
     email: string;
     isAdmin: boolean;
+    avatar?: string;
     token: string;
     addresses?: Address[];
-    wishlist?: string[];
+    wishlist?: (string | any)[];
+    cart?: {
+        product: string | any;
+        color: string;
+        size?: string;
+        quantity: number;
+    }[];
 }
 
 export interface LoginData {
@@ -43,7 +50,8 @@ const login = async (userData: LoginData): Promise<User> => {
     const response = await axios.post(`${API_URL}/api/users/login`, userData);
 
     if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+        const { avatar, ...userWithoutAvatar } = response.data;
+        localStorage.setItem('user', JSON.stringify(userWithoutAvatar));
     }
 
     return response.data;
@@ -53,10 +61,15 @@ const register = async (userData: RegisterData): Promise<User> => {
     const response = await axios.post(`${API_URL}/api/users`, userData);
 
     if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+        const { avatar, ...userWithoutAvatar } = response.data;
+        localStorage.setItem('user', JSON.stringify(userWithoutAvatar));
     }
 
     return response.data;
+};
+
+const logout = () => {
+    localStorage.removeItem('user');
 };
 
 const getProfile = async (token: string): Promise<User> => {
@@ -69,15 +82,55 @@ const getProfile = async (token: string): Promise<User> => {
     return response.data;
 };
 
-const logout = () => {
-    localStorage.removeItem('user');
+const syncCart = async (cart: any[], token: string) => {
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(`${API_URL}/api/users/profile/cart`, { cart }, config);
+    return response.data;
+};
+
+const syncWishlist = async (wishlist: string[], token: string) => {
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(`${API_URL}/api/users/profile/wishlist`, { wishlist }, config);
+    return response.data;
+};
+
+const updateProfile = async (userData: Partial<User>, token: string): Promise<User> => {
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+    const response = await axios.put(`${API_URL}/api/users/profile`, userData, config);
+
+    if (response.data) {
+        // Merge with existing user data to preserve the token, but omit avatar from localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const currentUser = JSON.parse(storedUser);
+            const { avatar, ...updatedWithoutAvatar } = response.data;
+            localStorage.setItem('user', JSON.stringify({ ...currentUser, ...updatedWithoutAvatar }));
+        }
+    }
+
+    return response.data;
 };
 
 const authService = {
     login,
     register,
     getProfile,
+    updateProfile,
     logout,
+    syncCart,
+    syncWishlist,
 };
 
 export default authService;

@@ -17,9 +17,11 @@ interface ProductTabsProps {
   reviews: Review[];
   avgRating: string;
   totalReviews: number;
+  activeTab?: string;
+  onTabChange?: (value: string) => void;
 }
 
-export const ProductTabs = ({ description, details, reviews, avgRating, totalReviews }: ProductTabsProps) => {
+export const ProductTabs = ({ description, details, reviews, avgRating, totalReviews, activeTab, onTabChange }: ProductTabsProps) => {
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const reviewsPerPage = 4;
 
@@ -29,7 +31,12 @@ export const ProductTabs = ({ description, details, reviews, avgRating, totalRev
     currentReviewPage * reviewsPerPage
   );
   return (
-    <Tabs defaultValue="description" className="mt-12">
+    <Tabs
+      value={activeTab}
+      onValueChange={onTabChange}
+      defaultValue="description"
+      className="mt-12"
+    >
       <TabsList className="w-full justify-start border-b border-border rounded-none bg-transparent p-0 gap-0">
         <TabsTrigger
           value="description"
@@ -181,7 +188,7 @@ export const ProductTabs = ({ description, details, reviews, avgRating, totalRev
           <div className="grid md:grid-cols-2 gap-6">
             {paginatedReviews.map((review, index) => (
               <motion.div
-                key={review.id}
+                key={review._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -209,7 +216,31 @@ export const ProductTabs = ({ description, details, reviews, avgRating, totalRev
                     ))}
                   </div>
                 </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">{review.comment}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-4">{review.comment}</p>
+                {review.images && review.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {review.images.map((img, i) => (
+                      <motion.div
+                        key={i}
+                        whileHover={{ scale: 1.05 }}
+                        className="w-16 h-16 rounded-lg overflow-hidden border border-border bg-secondary cursor-pointer"
+                        onClick={() => window.open(img.startsWith('http') || img.startsWith('data:') ? img : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${img}`, '_blank')}
+                      >
+                        <img
+                          src={img.startsWith('http') || img.startsWith('data:') ? img : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${img}`}
+                          alt={`Review image ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {review.adminReply && (
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-xl text-sm">
+                    <p className="font-medium text-primary mb-1">Response from Luxe:</p>
+                    <p className="text-muted-foreground">{review.adminReply}</p>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

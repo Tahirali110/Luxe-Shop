@@ -1,42 +1,36 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const productRoutes = require('./routes/productRoutes');
+const { seedAdmins } = require('./controllers/userController');
 const userRoutes = require('./routes/userRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 // Load environment variables
 dotenv.config();
 
 // Connect to database
 connectDB();
+seedAdmins();
 
 // Initialize Express app
 const app = express();
 
 // Middleware
-const allowedOrigins = [
-    "https://luxeecom.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:8080" // Adding 3000 just in case
-];
-
 app.use(cors({
-    origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
+    origin: "*", // Allow all origins for now
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Default root route
 app.get('/', (req, res) => {
@@ -47,6 +41,12 @@ app.get('/', (req, res) => {
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Start server
 const PORT = process.env.PORT || 5000;

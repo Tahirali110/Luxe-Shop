@@ -20,7 +20,7 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, ind
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
 
   // Use _id from MongoDB but fallback to id if it exists (for backward compatibility if needed)
-  const productId = product._id || (product as any).id;
+  const productId = product._id;
 
   const cartItemId = `${productId}-${selectedColor.name}-${product.sizes?.[0] || 'default'}`;
   const quantity = items.find(i => i.id === cartItemId)?.quantity || 0;

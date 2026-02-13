@@ -32,7 +32,7 @@ const Auth = () => {
   useEffect(() => {
     if (isSuccess && user) {
       toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
-      const from = (location.state as any)?.from?.pathname || '/';
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
       navigate(from, { replace: true });
       reset(); // Reset state after successful navigation
     }
@@ -41,7 +41,7 @@ const Auth = () => {
       toast.error(message || 'An error occurred');
       reset(); // Reset error state so toast doesn't show again on render
     }
-  }, [isSuccess, isError, message, navigate, location, isLogin, reset]);
+  }, [isSuccess, isError, message, navigate, location, isLogin, reset, user]);
 
   // Clear state when switching modes
   useEffect(() => {

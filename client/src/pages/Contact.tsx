@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Clock, Send, MessageSquare, CheckCircle } from 'lucide-react';
 import { CONTACT_INFO } from '@/utils/constants';
 import { pageTransition, fadeUp, staggerContainer } from '@/utils/animations';
+import { contactService } from '@/services/contactService';
+import { toast } from 'sonner';
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,11 +19,31 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setTimeout(() => setIsSubmitted(false), 5000);
+    try {
+      await contactService.submitForm({ ...formData, type: 'message' });
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      setTimeout(() => setIsSubmitted(false), 5000);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCallRequest = async () => {
+    try {
+      await contactService.submitForm({
+        name: 'Guest User',
+        email: 'N/A',
+        subject: 'Call Request',
+        message: 'User clicked on the phone number to start a call.',
+        type: 'call_request'
+      });
+    } catch (error) {
+      console.error('Failed to log call request:', error);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -32,7 +54,13 @@ const Contact = () => {
 
   const contactItems = [
     { icon: Mail, label: 'Email', value: CONTACT_INFO.email, href: `mailto:${CONTACT_INFO.email}` },
-    { icon: Phone, label: 'Phone', value: CONTACT_INFO.phone, href: `tel:${CONTACT_INFO.phone}` },
+    {
+      icon: Phone,
+      label: 'Phone',
+      value: CONTACT_INFO.phone,
+      href: `tel:${CONTACT_INFO.phone}`,
+      onClick: handleCallRequest
+    },
     { icon: MapPin, label: 'Address', value: `${CONTACT_INFO.address.street}, ${CONTACT_INFO.address.city}` },
     { icon: Clock, label: 'Hours', value: CONTACT_INFO.hours.weekday },
   ];
@@ -65,7 +93,7 @@ const Contact = () => {
             <motion.div variants={fadeUp} className="lg:col-span-3">
               <div className="bg-card rounded-3xl p-6 lg:p-8 border border-border">
                 <h2 className="font-display text-2xl font-semibold mb-6">Send a Message</h2>
-                
+
                 {isSubmitted ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -140,11 +168,10 @@ const Contact = () => {
                       disabled={isSubmitting}
                       whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
                       whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                      className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold transition-all ${
-                        isSubmitting
+                      className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold transition-all ${isSubmitting
                           ? 'bg-muted text-muted-foreground cursor-not-allowed'
                           : 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                      }`}
+                        }`}
                     >
                       {isSubmitting ? (
                         <>
@@ -184,7 +211,11 @@ const Contact = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">{item.label}</p>
                         {item.href ? (
-                          <a href={item.href} className="font-medium hover:text-primary transition-colors">
+                          <a
+                            href={item.href}
+                            onClick={item.onClick}
+                            className="font-medium hover:text-primary transition-colors"
+                          >
                             {item.value}
                           </a>
                         ) : (

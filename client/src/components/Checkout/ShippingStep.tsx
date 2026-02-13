@@ -3,7 +3,7 @@ import { useCheckout, SHIPPING_METHODS, ShippingMethodId, ShippingAddress } from
 import { fadeUp } from '@/utils/animations';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/store/useCartStore';
-import { useAddressStore } from '@/store/useAddressStore';
+import { useAddressStore, Address } from '@/store/useAddressStore';
 import { SHIPPING_THRESHOLD } from '@/utils/constants';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -119,7 +119,7 @@ export const ShippingStep = ({ onNext }: ShippingStepProps) => {
     }
   };
 
-  const handleSelectAddress = (address: any) => {
+  const handleSelectAddress = (address: Address) => {
     updateShippingAddress({
       label: address.label,
       firstName: address.firstName,
@@ -227,7 +227,7 @@ export const ShippingStep = ({ onNext }: ShippingStepProps) => {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3"
             >
-              {addresses.map((addr: any) => (
+              {addresses.map((addr: Address) => (
                 <button
                   key={addr._id}
                   type="button"

@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Package,
   Clock,
@@ -14,9 +14,12 @@ import {
   MessageCircle,
   ChevronDown,
   Filter,
-  CalendarDays
+  CalendarDays,
+  Star,
+  Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from 'sonner';
 import { generateInvoicePDF, InvoiceData } from '@/utils/invoiceGenerator';
@@ -32,12 +35,13 @@ import {
 } from "@/components/ui/select";
 import axios from 'axios';
 import { Product } from '@/types/product';
+import ReviewModal from '../ReviewModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-type OrderStatus = 'all' | 'processing' | 'shipped' | 'delivered';
+type OrderStatus = 'All' | 'Placed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
 
-const orderStatusSteps = ['placed', 'processing', 'shipped', 'delivered'];
+const orderStatusSteps = ['Placed', 'Processing', 'Shipped', 'Delivered'];
 
 // Mock orders with hardcoded values to remove dependency on mockData.ts
 const mockOrdersData = [
@@ -149,10 +153,36 @@ const mockOrders: Order[] = mockOrdersData.map(order => {
   const tax = subtotal * 0.08; // 8% Tax
   const total = subtotal + tax + order.shippingFee;
 
-  const { shippingFee, ...rest } = order;
+  const { shippingFee, items, shippingAddress, status, ...rest } = order;
 
   return {
     ...rest,
+    _id: order.id,
+    user: 'mock-user-id',
+    paymentStatus: 'paid',
+    orderStatus: (status.charAt(0).toUpperCase() + status.slice(1)) as any,
+    createdAt: order.date,
+    items: items.map(item => ({
+      productId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      selectedColor: item.selectedColor,
+      selectedSize: item.selectedSize,
+      image: item.image
+    })),
+    shippingAddress: {
+      firstName: shippingAddress.firstName,
+      lastName: shippingAddress.lastName,
+      email: shippingAddress.email,
+      phone: shippingAddress.phone,
+      addressLine1: shippingAddress.address,
+      addressLine2: shippingAddress.apartment,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      zipCode: shippingAddress.zipCode,
+      country: shippingAddress.country
+    },
     totals: {
       subtotal,
       tax,
@@ -164,15 +194,53 @@ const mockOrders: Order[] = mockOrdersData.map(order => {
 
 type DateFilter = 'all' | 'last30' | 'last6months' | 'last12months' | 'thisYear';
 
+import { useAuthStore } from '@/store/useAuthStore';
+
+// ... (existing imports)
+
+// ...
+
 export const OrdersSection = () => {
+  const { user } = useAuthStore();
   const { addItem, openCart } = useCartStore();
   const { orders, fetchOrders, isLoading } = useOrderStore();
-  const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState<OrderStatus>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Handle auto-opening review modal from search params
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const orderId = searchParams.get('orderId');
+    const productId = searchParams.get('productId');
+    const productName = searchParams.get('productName');
+
+    if (action === 'review' && orderId && productId && productName) {
+      setReviewingItem({
+        productId,
+        productName: decodeURIComponent(productName),
+        orderId
+      });
+
+      // Clear the search params after opening to avoid re-opening on manual refresh/navigation
+      const newParams = new URLSearchParams(searchParams);
+      ['action', 'orderId', 'productId', 'productName'].forEach(p => newParams.delete(p));
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 5;
   const [productsCache, setProductsCache] = useState<Product[]>([]);
+  const [reviewingItem, setReviewingItem] = useState<{
+    productId: string;
+    productName: string;
+    orderId: string;
+    initialData?: { rating: number; comment: string; images: string[] };
+    isEdit?: boolean;
+  } | null>(null);
 
   // Fetch products for reorder logic
   useEffect(() => {
@@ -188,26 +256,43 @@ export const OrdersSection = () => {
     fetchOrders(); // Fetch real orders from backend
   }, [fetchOrders]);
 
-  // Filter by status
-  let filteredOrders = orders.filter(order =>
-    statusFilter === 'all' || order.status === statusFilter
-  );
+  // Filter logic
+  const filteredOrders = useMemo(() => {
+    let result = [...orders];
 
-  // Filter by date (fixed implementation)
-  if (dateFilter !== 'all') {
-    const now = new Date();
-    filteredOrders = filteredOrders.filter(order => {
-      const orderDate = new Date(order.createdAt || '');
-      const diffTime = now.getTime() - orderDate.getTime();
-      const diffMonths = (now.getFullYear() - orderDate.getFullYear()) * 12 + (now.getMonth() - orderDate.getMonth());
+    // Filter by status
+    if (statusFilter !== 'All') {
+      result = result.filter(order => order.orderStatus === statusFilter);
+    }
 
-      if (dateFilter === 'last30') return (diffTime / (1000 * 60 * 60 * 24)) <= 30;
-      if (dateFilter === 'last6months') return diffMonths >= 0 && diffMonths <= 6;
-      if (dateFilter === 'last12months') return diffMonths >= 0 && diffMonths <= 12;
-      if (dateFilter === 'thisYear') return orderDate.getFullYear() === now.getFullYear();
-      return true;
-    });
-  }
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(order =>
+        order._id.toLowerCase().includes(q) ||
+        formatOrderId(order._id).toLowerCase().includes(q) ||
+        order.items.some(item => item.name.toLowerCase().includes(q))
+      );
+    }
+
+    // Filter by date
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      result = result.filter(order => {
+        const orderDate = new Date(order.createdAt || '');
+        const diffTime = now.getTime() - orderDate.getTime();
+        const diffMonths = (now.getFullYear() - orderDate.getFullYear()) * 12 + (now.getMonth() - orderDate.getMonth());
+
+        if (dateFilter === 'last30') return (diffTime / (1000 * 60 * 60 * 24)) <= 30;
+        if (dateFilter === 'last6months') return diffMonths >= 0 && diffMonths <= 6;
+        if (dateFilter === 'last12months') return diffMonths >= 0 && diffMonths <= 12;
+        if (dateFilter === 'thisYear') return orderDate.getFullYear() === now.getFullYear();
+        return true;
+      });
+    }
+
+    return result;
+  }, [orders, statusFilter, searchQuery, dateFilter]);
   // Handle pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const paginatedOrders = filteredOrders.slice(
@@ -217,7 +302,7 @@ export const OrdersSection = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, dateFilter]);
+  }, [statusFilter, dateFilter, searchQuery]);
 
   const getStatusIndex = (status: string) => {
     return orderStatusSteps.indexOf(status);
@@ -247,6 +332,29 @@ export const OrdersSection = () => {
     } catch (error) {
       console.error('Reorder failed:', error);
       toast.error('Reorder failed. Please try again.');
+    }
+  };
+
+  const handleEditReview = (item: any, orderId: string) => {
+    const product = productsCache.find((p) => p._id === item.productId);
+    const review = product?.reviews?.find((r) => r.user === user?._id);
+
+    if (review) {
+      setReviewingItem({
+        productId: item.productId,
+        productName: item.name,
+        orderId: orderId,
+        initialData: {
+          rating: review.rating,
+          comment: review.comment,
+          images: review.images || []
+        },
+        isEdit: true
+      });
+    } else {
+      // Fallback or error if review not found locally
+      console.error("Review not found for user", user?._id);
+      toast.error("Could not load your review for editing. Please try refreshing.");
     }
   };
 
@@ -374,15 +482,16 @@ export const OrdersSection = () => {
     );
   }
 
-  function handleContactSupport(event: MouseEvent<HTMLButtonElement, MouseEvent>): void {
-    throw new Error('Function not implemented.');
-  }
+
+  const formatOrderId = (id: string) => {
+    return `#${id.slice(-8).toUpperCase()}`;
+  };
 
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex flex-wrap gap-2">
-          {(['all', 'processing', 'shipped', 'delivered'] as OrderStatus[]).map((status) => (
+          {(['All', 'Processing', 'Shipped', 'Delivered'] as OrderStatus[]).map((status) => (
             <Button
               key={status}
               variant={statusFilter === status ? 'default' : 'outline'}
@@ -390,7 +499,7 @@ export const OrdersSection = () => {
               onClick={() => setStatusFilter(status)}
               className="capitalize"
             >
-              {status === 'all' ? (
+              {status === 'All' ? (
                 <>
                   <Filter size={14} className="mr-1" />
                   All Orders
@@ -402,20 +511,31 @@ export const OrdersSection = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <CalendarDays size={16} className="text-muted-foreground" />
-          <Select value={dateFilter} onValueChange={(val) => setDateFilter(val as DateFilter)}>
-            <SelectTrigger className="w-[140px] h-9">
-              <SelectValue placeholder="Date range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="last30">Last 30 Days</SelectItem>
-              <SelectItem value="last6months">Last 6 Months</SelectItem>
-              <SelectItem value="last12months">Last 12 Months</SelectItem>
-              <SelectItem value="thisYear">This Year</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-1 items-center gap-2 ml-auto min-w-[200px]">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by ID or product..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 bg-background/50 border-border/50 focus-visible:ring-1"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <CalendarDays size={16} className="text-muted-foreground hidden sm:block" />
+            <Select value={dateFilter} onValueChange={(val) => setDateFilter(val as DateFilter)}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="Date range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="last30">Last 30 Days</SelectItem>
+                <SelectItem value="last6months">Last 6 Months</SelectItem>
+                <SelectItem value="last12months">Last 12 Months</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -442,16 +562,17 @@ export const OrdersSection = () => {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold">{order._id}</h3>
+                      <h3 className="font-semibold">{formatOrderId(order._id)}</h3>
                       <p className="text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-bold">${order.totals.total.toFixed(2)}</span>
-                      <p className={`text-sm font-medium capitalize ${order.status === 'delivered' ? 'text-green-500' :
-                        order.status === 'shipped' ? 'text-blue-500' :
-                          'text-orange-500'
+                      <p className={`text-sm font-medium capitalize ${order.orderStatus === 'Delivered' ? 'text-green-500' :
+                        order.orderStatus === 'Shipped' ? 'text-blue-500' :
+                          order.orderStatus === 'Cancelled' ? 'text-red-500' :
+                            'text-orange-500'
                         }`}>
-                        {order.status}
+                        {order.orderStatus}
                       </p>
                     </div>
                   </div>
@@ -459,8 +580,8 @@ export const OrdersSection = () => {
                   <div className="relative mb-4">
                     <div className="flex justify-between items-center">
                       {orderStatusSteps.map((step, index) => {
-                        const isActive = index <= getStatusIndex(order.status);
-                        const isCurrent = step === order.status;
+                        const isActive = index <= getStatusIndex(order.orderStatus);
+                        const isCurrent = step === order.orderStatus;
 
                         return (
                           <div key={step} className="flex flex-col items-center relative z-10">
@@ -473,10 +594,10 @@ export const OrdersSection = () => {
                                 : 'bg-secondary text-muted-foreground'
                                 } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}
                             >
-                              {step === 'placed' && <Box size={14} />}
-                              {step === 'processing' && <Clock size={14} />}
-                              {step === 'shipped' && <Truck size={14} />}
-                              {step === 'delivered' && <CheckCircle size={14} />}
+                              {step === 'Placed' && <Box size={14} />}
+                              {step === 'Processing' && <Clock size={14} />}
+                              {step === 'Shipped' && <Truck size={14} />}
+                              {step === 'Delivered' && <CheckCircle size={14} />}
                             </motion.div>
                             <div className="flex flex-col items-center mt-2">
                               <span className={`text-[10px] sm:text-xs capitalize font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -490,7 +611,7 @@ export const OrdersSection = () => {
                     <div className="absolute top-4 left-4 right-4 h-0.5 bg-secondary -z-0">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${(getStatusIndex(order.status) / (orderStatusSteps.length - 1)) * 100}%` }}
+                        animate={{ width: `${(getStatusIndex(order.orderStatus) / (orderStatusSteps.length - 1)) * 100}%` }}
                         transition={{ duration: 0.5 }}
                         className="h-full bg-primary"
                       />
@@ -560,32 +681,63 @@ export const OrdersSection = () => {
                           <h4 className="font-semibold mb-3">Items</h4>
                           <div className="space-y-3">
                             {order.items?.map((item, idx) => (
-                              <Link key={idx} to={`/product/${item.productId}`} className="block">
-                                <motion.div
-                                  whileHover={{ x: 4 }}
-                                  className="flex gap-4 p-3 bg-card rounded-xl hover:bg-card/80 transition-colors"
-                                >
-                                  <img
-                                    src={item.image || ''}
-                                    alt={item.name || 'Product'}
-                                    className="w-16 h-16 rounded-lg object-cover bg-secondary"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="font-medium hover:text-primary transition-colors truncate">{item.name}</h5>
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
-                                      {item.selectedColor && <span>{item.selectedColor}</span>}
-                                      {item.selectedColor && item.selectedSize && <span className="w-1 h-1 rounded-full bg-border" />}
-                                      {item.selectedSize && <span>Size {item.selectedSize}</span>}
-                                      <span className="w-1 h-1 rounded-full bg-border" />
-                                      <span>Qty: {item.quantity || 1}</span>
+                              <div key={idx} className="space-y-2">
+                                <Link to={`/product/${item.productId}`} className="block">
+                                  <motion.div
+                                    whileHover={{ x: 4 }}
+                                    className="flex gap-4 p-3 bg-card rounded-xl hover:bg-card/80 transition-colors"
+                                  >
+                                    <img
+                                      src={item.image || ''}
+                                      alt={item.name || 'Product'}
+                                      className="w-16 h-16 rounded-lg object-cover bg-secondary"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <h5 className="font-medium hover:text-primary transition-colors truncate">{item.name}</h5>
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
+                                        {item.selectedColor && <span>{item.selectedColor}</span>}
+                                        {item.selectedColor && item.selectedSize && <span className="w-1 h-1 rounded-full bg-border" />}
+                                        {item.selectedSize && <span>Size {item.selectedSize}</span>}
+                                        <span className="w-1 h-1 rounded-full bg-border" />
+                                        <span>Qty: {item.quantity || 1}</span>
+                                      </div>
                                     </div>
+                                    <div className="text-right shrink-0">
+                                      <p className="font-semibold">${(item.price || 0).toFixed(2)}</p>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Unit Price</p>
+                                    </div>
+                                  </motion.div>
+                                </Link>
+                                {order.orderStatus === 'Delivered' && (
+                                  <div className="flex justify-end px-3">
+                                    {!item.isReviewed ? (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8 gap-1.5 font-medium"
+                                        onClick={() => setReviewingItem({
+                                          productId: item.productId,
+                                          productName: item.name,
+                                          orderId: order._id
+                                        })}
+                                      >
+                                        <Star size={14} className="fill-primary" />
+                                        Add Review
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 gap-1.5 font-medium"
+                                        onClick={() => handleEditReview(item, order._id)}
+                                      >
+                                        <MessageCircle size={14} />
+                                        Edit Review
+                                      </Button>
+                                    )}
                                   </div>
-                                  <div className="text-right shrink-0">
-                                    <p className="font-semibold">${(item.price || 0).toFixed(2)}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Unit Price</p>
-                                  </div>
-                                </motion.div>
-                              </Link>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -607,10 +759,12 @@ export const OrdersSection = () => {
                                   Track Order
                                 </Button>
                               </Link>
-                              <Button variant="outline" size="sm" onClick={handleContactSupport} className="gap-1 bg-background">
-                                <MessageCircle size={14} />
-                                Contact Support
-                              </Button>
+                              <Link to="/contact">
+                                <Button variant="outline" size="sm" className="gap-1 bg-background">
+                                  <MessageCircle size={14} />
+                                  Contact Support
+                                </Button>
+                              </Link>
                             </div>
                           </div>
 
@@ -676,6 +830,18 @@ export const OrdersSection = () => {
           />
         )
       }
+      {reviewingItem && (
+        <ReviewModal
+          isOpen={!!reviewingItem}
+          onClose={() => setReviewingItem(null)}
+          productId={reviewingItem.productId}
+          productName={reviewingItem.productName}
+          orderId={reviewingItem.orderId}
+          initialData={reviewingItem.initialData}
+          isEdit={reviewingItem.isEdit}
+          onSuccess={() => fetchOrders()}
+        />
+      )}
     </motion.div >
   );
 };

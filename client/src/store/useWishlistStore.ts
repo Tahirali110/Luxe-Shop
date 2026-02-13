@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toast } from 'sonner';
+import authService from '@/services/authService';
 
 interface WishlistState {
   items: string[]; // Array of product IDs (strings for MongoDB _id)
@@ -10,6 +11,7 @@ interface WishlistState {
   removeItem: (productId: string) => void;
   toggleItem: (productId: string, productName?: string) => void;
   clearWishlist: () => void;
+  setItems: (items: string[]) => void;
 
   // Computed
   isInWishlist: (productId: string) => boolean;
@@ -24,14 +26,34 @@ export const useWishlistStore = create<WishlistState>()(
       addItem: (productId) => {
         set((state) => {
           if (state.items.includes(productId)) return state;
-          return { items: [...state.items, productId] };
+          const newItems = [...state.items, productId];
+
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.token) {
+              authService.syncWishlist(newItems, user.token).catch(console.error);
+            }
+          }
+
+          return { items: newItems };
         });
       },
 
       removeItem: (productId) => {
-        set((state) => ({
-          items: state.items.filter(id => id !== productId),
-        }));
+        set((state) => {
+          const newItems = state.items.filter(id => id !== productId);
+
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.token) {
+              authService.syncWishlist(newItems, user.token).catch(console.error);
+            }
+          }
+
+          return { items: newItems };
+        });
       },
 
       toggleItem: (productId, productName) => {
@@ -51,7 +73,18 @@ export const useWishlistStore = create<WishlistState>()(
         }
       },
 
-      clearWishlist: () => set({ items: [] }),
+      clearWishlist: () => {
+        set({ items: [] });
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          if (user.token) {
+            authService.syncWishlist([], user.token).catch(console.error);
+          }
+        }
+      },
+
+      setItems: (items) => set({ items }),
 
       isInWishlist: (productId) => {
         return get().items.includes(productId);

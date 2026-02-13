@@ -10,11 +10,7 @@ const products = [
     category: "Clothing",
     rating: 4.9,
     reviewsCount: 127,
-    reviews: [
-      { id: 'r1', userName: 'Emma S.', rating: 5, comment: 'Simply the best overcoat I have ever owned. The wool is so premium!', date: '2026-01-10', verified: true },
-      { id: 'r2', userName: 'James W.', rating: 5, comment: 'Perfect fit and very warm. Worth every penny.', date: '2026-01-05', verified: true },
-      { id: 'r3', userName: 'Michael L.', rating: 4, comment: 'Great quality, but the sleeves are a bit long for me.', date: '2025-12-20', verified: true }
-    ],
+    reviews: [],
     badge: "Best Seller",
     colors: [
       {
@@ -65,9 +61,7 @@ const products = [
     category: "Electronics",
     rating: 4.8,
     reviewsCount: 342,
-    reviews: [
-      { id: '1', userName: 'David K.', rating: 5, comment: 'Noise cancellation is top notch. Better than my Sonys!', date: '2025-12-15', verified: true }
-    ],
+    reviews: [],
     badge: "New",
     colors: [
       {
@@ -257,11 +251,7 @@ const products = [
     category: "Accessories",
     rating: 4.7,
     reviewsCount: 98,
-    reviews: [
-      { id: 's1', userName: 'Sophia R.', rating: 5, comment: 'These are stunning! Lightweight and the clarity is amazing.', date: '2026-01-15', verified: true },
-      { id: 's2', userName: 'David M.', rating: 4, comment: 'Classic look, very durable. I use them every day.', date: '2026-01-08', verified: true },
-      { id: 's3', userName: 'Olivia G.', rating: 5, comment: 'The polarization is top notch. Best sunglasses I own.', date: '2025-12-28', verified: true }
-    ],
+    reviews: [],
     colors: [
       {
         name: "Matte Black",
@@ -305,16 +295,16 @@ const products = [
         image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
         images: [
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
-          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"
+          "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80"
         ]
       },
       {
         name: "Space Gray",
         hex: "#1a1a1a",
         price: 1349,
-        image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+        image: "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80",
         images: [
-          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+          "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80",
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80"
         ]
       }

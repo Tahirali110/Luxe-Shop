@@ -37,3 +37,7 @@ lerna-debug.log*
 
 # OS generated files
 Thumbs.db
+
+# Security - API keys and test configs
+config.json
+automate_testsprite.js

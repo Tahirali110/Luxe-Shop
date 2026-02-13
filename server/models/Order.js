@@ -8,6 +8,7 @@ const orderItemSchema = new mongoose.Schema({
     image: { type: String, required: true },
     selectedColor: { type: String },
     selectedSize: { type: String },
+    isReviewed: { type: Boolean, default: false },
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -28,12 +29,16 @@ const orderSchema = new mongoose.Schema({
     paymentMethod: { type: String, required: true, enum: ['Credit Card', 'UPI', 'Wallet', 'COD'] },
     paymentStatus: { type: String, required: true, enum: ['Pending', 'Completed', 'Failed'], default: 'Pending' },
     orderStatus: { type: String, required: true, enum: ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'], default: 'Placed' },
+    shippingMethodId: { type: String },
+    shippingMethodName: { type: String },
+    estimatedDelivery: { type: String },
     totals: {
         subtotal: { type: Number, required: true },
         tax: { type: Number, required: true },
         shipping: { type: Number, required: true },
         total: { type: Number, required: true },
     },
+    paymentIntentId: { type: String, default: null },
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);

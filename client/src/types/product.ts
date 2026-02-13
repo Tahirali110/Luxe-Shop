@@ -7,16 +7,29 @@ export interface ProductColor {
     image: string;
     images?: string[];
     price?: number; // Price for this specific color variant
+    originalPrice?: number; // Comparative price for this specific color variant
 }
 
 export interface Review {
-    id: string;
+    _id: string;
+    id?: string;
+    user?: string;
     userName: string;
     userAvatar?: string;
     rating: number;
     comment: string;
     date: string;
     verified: boolean;
+    images?: string[];
+    adminReply?: string;
+    adminReplyDate?: string;
+}
+
+// Variant stock tracking per color + size combination
+export interface VariantStock {
+    color: string;
+    size: string;
+    stock: number;
 }
 
 // Product type for data coming from the backend API
@@ -37,6 +50,7 @@ export interface Product {
     sizePriceAdjustments?: Record<string, number>;
     features?: string[];
     stock: number;
+    variantStock?: VariantStock[]; // Per color+size stock tracking
     image?: string;
     createdAt?: string;
     updatedAt?: string;

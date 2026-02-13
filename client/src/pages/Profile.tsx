@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { pageTransition, fadeUp } from '@/utils/animations';
 import { useWishlistStore } from '@/store/useWishlistStore';
+import { useOrderStore } from '@/store/useOrderStore';
 import {
   Dialog,
   DialogContent,
@@ -61,14 +62,14 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   // Get user data and actions from store
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateProfile } = useAuthStore();
 
   // Use store data or fallback to defaults (avoiding hardcoded initialUserData for display where possible)
   const [userData, setUserData] = useState({
     name: user?.name || 'User',
     email: user?.email || '',
-    phone: '+1 (555) 000-0000', // Placeholder as phone isn't in User model yet
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+    phone: '',
+    avatar: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
     memberSince: 'January 2025',
   });
 
@@ -77,6 +78,7 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const wishlistItems = useWishlistStore((state) => state.items);
+  const { orders, fetchOrders } = useOrderStore();
   const [products, setProducts] = useState<Product[]>([]);
 
   // Update local state when store user changes
@@ -86,6 +88,7 @@ const Profile = () => {
         ...prev,
         name: user.name,
         email: user.email,
+        avatar: user.avatar || prev.avatar
       }));
     }
   }, [user]);
@@ -104,7 +107,8 @@ const Profile = () => {
     if (activeSection === 'wishlist') {
       fetchProducts();
     }
-  }, [activeSection]);
+    fetchOrders();
+  }, [activeSection, fetchOrders]);
 
   const handleLogout = () => {
     // 1. Call logout action from store (clears localStorage and state)
@@ -148,7 +152,7 @@ const Profile = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const errors: Record<string, string> = {};
 
     if (!editFormData.name.trim()) {
@@ -165,9 +169,14 @@ const Profile = () => {
       return;
     }
 
-    setUserData(editFormData);
-    setIsEditing(false);
-    toast.success('Profile updated successfully!');
+    try {
+      await updateProfile(editFormData);
+      setUserData(editFormData);
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update profile');
+    }
   };
 
   const renderContent = () => {
@@ -275,10 +284,14 @@ const Profile = () => {
                   </div>
                   <span className="font-medium">Default Address</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  123 Fashion Street<br />
-                  New York, NY 10001
-                </p>
+                {orders.length > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {orders[0].shippingAddress.addressLine1}<br />
+                    {orders[0].shippingAddress.city}, {orders[0].shippingAddress.state} {orders[0].shippingAddress.zipCode}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No address saved yet</p>
+                )}
               </div>
               <div className="p-5 bg-card rounded-2xl border border-border">
                 <div className="flex items-center gap-3 mb-3">
@@ -287,13 +300,23 @@ const Profile = () => {
                   </div>
                   <span className="font-medium">Last Order</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Order #ORD-003<br />
-                  January 22, 2025
-                </p>
-                <Link to="/track-order?order=ORD-003" className="text-primary text-sm hover:underline mt-2 inline-block">
-                  Track Order →
-                </Link>
+                {orders.length > 0 ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Order #{orders[0]._id.slice(-8).toUpperCase()}<br />
+                      {new Date(orders[0].createdAt).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    <Link to={`/track-order?order=${orders[0]._id}`} className="text-primary text-sm hover:underline mt-2 inline-block">
+                      Track Order →
+                    </Link>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No orders placed yet</p>
+                )}
               </div>
             </div>
           </motion.div>
@@ -308,7 +331,7 @@ const Profile = () => {
       case 'payments':
         return <PaymentMethods />;
 
-      case 'wishlist':
+      case 'wishlist': {
         const wishlistProducts = products.filter((p) => wishlistItems.includes(p._id));
         return (
           <motion.div variants={fadeUp} initial="hidden" animate="visible" className="space-y-4">
@@ -347,6 +370,7 @@ const Profile = () => {
             )}
           </motion.div>
         );
+      }
 
       case 'settings':
         return <SettingsPanel />;

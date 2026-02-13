@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Bell, 
-  Mail, 
-  MessageSquare, 
-  Shield, 
-  Lock, 
-  Smartphone, 
-  Monitor, 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
+import {
+  Bell,
+  Mail,
+  MessageSquare,
+  Shield,
+  Lock,
+  Smartphone,
+  Monitor,
+  MapPin,
+  Clock,
+  CheckCircle,
   XCircle,
   Eye,
   EyeOff
@@ -63,7 +63,7 @@ export const SettingsPanel = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(true);
-  
+
   // Security
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -94,7 +94,7 @@ export const SettingsPanel = () => {
       toast.error('Password must be at least 8 characters');
       return;
     }
-    
+
     // Mock password change
     toast.success('Password changed successfully');
     setShowPasswordForm(false);
@@ -116,7 +116,7 @@ export const SettingsPanel = () => {
             <p className="text-sm text-muted-foreground">Manage how you receive updates</p>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b border-border">
             <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export const SettingsPanel = () => {
               onCheckedChange={setEmailNotifications}
             />
           </div>
-          
+
           <div className="flex items-center justify-between py-3 border-b border-border">
             <div className="flex items-center gap-3">
               <MessageSquare size={18} className="text-muted-foreground" />
@@ -145,7 +145,7 @@ export const SettingsPanel = () => {
               onCheckedChange={setSmsNotifications}
             />
           </div>
-          
+
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
               <Bell size={18} className="text-muted-foreground" />
@@ -173,7 +173,7 @@ export const SettingsPanel = () => {
             <p className="text-sm text-muted-foreground">Protect your account</p>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {/* Two-Factor Authentication */}
           <div className="flex items-center justify-between py-3 border-b border-border">
@@ -189,7 +189,7 @@ export const SettingsPanel = () => {
               onCheckedChange={handleToggle2FA}
             />
           </div>
-          
+
           {/* Change Password */}
           <div className="py-3">
             <div className="flex items-center justify-between mb-4">
@@ -208,7 +208,7 @@ export const SettingsPanel = () => {
                 {showPasswordForm ? 'Cancel' : 'Change'}
               </Button>
             </div>
-            
+
             {showPasswordForm && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -216,6 +216,9 @@ export const SettingsPanel = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="mt-4 p-4 bg-secondary/50 rounded-xl space-y-4"
               >
+                {/* Hidden dummy fields to prevent browser autofill */}
+                <input type="text" autoComplete="username" style={{ display: 'none' }} />
+                <input type="password" autoComplete="new-password" style={{ display: 'none' }} />
                 <div className="grid gap-2">
                   <Label htmlFor="currentPwd">Current Password</Label>
                   <div className="relative">
@@ -225,6 +228,7 @@ export const SettingsPanel = () => {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Enter current password"
+                      autoComplete="current-password"
                     />
                     <button
                       type="button"
@@ -244,6 +248,7 @@ export const SettingsPanel = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -261,6 +266,7 @@ export const SettingsPanel = () => {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
                     placeholder="Confirm new password"
                   />
                 </div>
@@ -284,14 +290,13 @@ export const SettingsPanel = () => {
             <p className="text-sm text-muted-foreground">Recent account activity</p>
           </div>
         </div>
-        
+
         <div className="space-y-3">
           {mockLoginHistory.map((login) => (
             <div
               key={login.id}
-              className={`flex items-center gap-4 p-4 rounded-xl ${
-                login.status === 'failed' ? 'bg-destructive/10' : 'bg-secondary/50'
-              }`}
+              className={`flex items-center gap-4 p-4 rounded-xl ${login.status === 'failed' ? 'bg-destructive/10' : 'bg-secondary/50'
+                }`}
             >
               <login.icon size={20} className="text-muted-foreground" />
               <div className="flex-1">

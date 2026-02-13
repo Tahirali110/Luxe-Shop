@@ -2,28 +2,51 @@ import { ArrowLeft, ArrowRight, CreditCard, Wallet, Smartphone, Lock, Plus, Chec
 import { useCheckout, PAYMENT_METHODS, PaymentMethodId, PaymentDetails } from '@/context/CheckoutContext';
 import { fadeUp } from '@/utils/animations';
 import { cn } from '@/lib/utils';
-import { usePaymentStore } from '@/store/usePaymentStore';
+import { usePaymentStore, SavedPayment } from '@/store/usePaymentStore';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { CardElement } from '@stripe/react-stripe-js';
+
+// Stripe CardElement styling options
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      color: '#1a1a1a',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontSmoothing: 'antialiased',
+      fontSize: '16px',
+      '::placeholder': {
+        color: '#9ca3af',
+      },
+    },
+    invalid: {
+      color: '#ef4444',
+      iconColor: '#ef4444',
+    },
+  },
+  hidePostalCode: true,
+};
 
 interface PaymentStepProps {
   onNext: () => void;
   onBack: () => void;
 }
 
+import { useStripe, useElements } from '@stripe/react-stripe-js';
+
 export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
-  const { formData, setPaymentMethod, updatePaymentDetails, setUpiId, setSelectedApp } = useCheckout();
+  const { formData, setPaymentMethod, updatePaymentDetails, setUpiId, setSelectedApp, setStripePaymentMethodId } = useCheckout();
   const { methods, addPaymentMethod, getDefaultPayment, upiIds, addUpiId } = usePaymentStore();
 
   const { paymentMethod, paymentDetails, upiId, selectedApp } = formData;
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
 
-  // View states: 'list', 'new', 'selected'
-  const [view, setView] = useState<'list' | 'new' | 'selected'>(
-    methods.length > 0 && paymentMethod === 'credit-card' ? 'selected' : 'new'
-  );
+  // View states: 'stripe' for new Stripe card, 'list' for saved cards, 'selected' for selected saved card
+  const [view, setView] = useState<'stripe' | 'list' | 'selected'>('stripe');
 
   useEffect(() => {
     usePaymentStore.getState().fetchPayments();
@@ -96,30 +119,15 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
 
   const validateForm = () => {
     if (paymentMethod === 'credit-card') {
-      const newErrors: Record<string, string> = {};
-      const cardNumberClean = paymentDetails.cardNumber.replace(/\s/g, '');
-
-      if (!cardNumberClean || cardNumberClean.length < 16) {
-        newErrors.cardNumber = 'Valid card number is required (16 digits)';
+      // For Stripe CardElement, we rely on cardComplete state
+      if (!cardComplete) {
+        setCardError('Please enter valid card details');
+        return false;
       }
-      if (!paymentDetails.cardName.trim()) {
-        newErrors.cardName = 'Name on card is required';
+      if (cardError) {
+        return false;
       }
-      if (!paymentDetails.expiryDate || !/^\d{2}\/\d{2}$/.test(paymentDetails.expiryDate)) {
-        newErrors.expiryDate = 'Valid expiry date is required (MM/YY)';
-      } else {
-        const [month, year] = paymentDetails.expiryDate.split('/');
-        const expMonth = parseInt(month, 10);
-        if (expMonth < 1 || expMonth > 12) {
-          newErrors.expiryDate = 'Invalid month';
-        }
-      }
-      if (!paymentDetails.cvv || paymentDetails.cvv.length < 3) {
-        newErrors.cvv = 'Valid CVV is required (3-4 digits)';
-      }
-
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
+      return true;
     }
 
     if (paymentMethod === 'upi') {
@@ -141,7 +149,7 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
     return true;
   };
 
-  const handleSelectPayment = (method: any) => {
+  const handleSelectPayment = (method: SavedPayment) => {
     updatePaymentDetails({
       cardNumber: method.cardNumber,
       cardName: method.cardName,
@@ -152,30 +160,65 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
     toast.success('Payment method updated');
   };
 
+  const stripe = useStripe();
+  const elements = useElements();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      if (paymentMethod === 'credit-card' && view === 'new') {
-        const alreadyExists = methods.some(m => m.cardNumber === paymentDetails.cardNumber);
-        if (!alreadyExists) {
-          await addPaymentMethod({
-            cardNumber: paymentDetails.cardNumber,
-            cardName: paymentDetails.cardName,
-            expiryDate: paymentDetails.expiryDate,
-            isDefault: methods.length === 0
-          });
-          toast.success('Card saved to profile');
+      if (paymentMethod === 'credit-card') {
+        if (!stripe || !elements) {
+          toast.error('Stripe not initialized');
+          return;
         }
-      }
-      if (paymentMethod === 'upi') {
+
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          toast.error('Card element not found');
+          return;
+        }
+
+        // Create PaymentMethod
+        try {
+          const { error, paymentMethod: stripeMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+            billing_details: {
+              name: paymentDetails.cardName,
+              // We could add more billing details here if available in formData
+            },
+          });
+
+          if (error) {
+            setCardError(error.message || 'Failed to process card details');
+            return;
+          }
+
+          if (stripeMethod) {
+            setStripePaymentMethodId(stripeMethod.id);
+            onNext();
+          }
+        } catch (err) {
+          console.error('Stripe error:', err);
+          toast.error('Failed to save card details');
+        }
+      } else if (paymentMethod === 'upi') {
         const existingUpi = upiIds.find(u => u.upiId === upiId);
         if (!existingUpi) {
           await addUpiId({ upiId, isDefault: upiIds.length === 0 });
           toast.success('UPI ID saved to profile');
         }
+        onNext();
+      } else {
+        onNext();
       }
-      onNext();
     }
+  };
+
+  // Handle CardElement changes
+  const handleCardChange = (event: any) => {
+    setCardComplete(event.complete);
+    setCardError(event.error ? event.error.message : null);
   };
 
   return (
@@ -232,7 +275,7 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
         </div>
       </div>
 
-      {/* Credit Card Form - Conditional */}
+      {/* Credit Card Form - Stripe CardElement */}
       {paymentMethod === 'credit-card' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -240,162 +283,46 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
               <CreditCard size={20} className="text-primary" />
               Card Details
             </h3>
-            {view === 'selected' && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setView('list')}
-                className="text-primary"
-              >
-                Change
-              </Button>
-            )}
           </div>
 
-          <AnimatePresence mode="wait">
-            {view === 'selected' && (
-              <motion.div
-                key="selected"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="p-6 bg-secondary/50 rounded-2xl border-2 border-primary/20 flex justify-between items-center"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-8 bg-primary/10 rounded flex items-center justify-center">
-                    <CreditCard size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold">{paymentDetails.cardNumber}</p>
-                    <p className="text-xs text-muted-foreground">{paymentDetails.cardName} • {paymentDetails.expiryDate}</p>
-                  </div>
-                </div>
-                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary">
-                  <Check size={20} />
-                </div>
-              </motion.div>
-            )}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border border-border p-6 space-y-4"
+          >
+            {/* Stripe CardElement */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-muted-foreground">
+                Card Information
+              </label>
+              <div className="w-full px-4 py-4 bg-secondary rounded-xl border-0 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <CardElement
+                  options={CARD_ELEMENT_OPTIONS}
+                  onChange={handleCardChange}
+                />
+              </div>
+              {cardError && (
+                <p className="text-destructive text-sm mt-2">{cardError}</p>
+              )}
+            </div>
 
-            {view === 'list' && (
-              <motion.div
-                key="list"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-3"
-              >
-                {methods.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleSelectPayment(m)}
-                    className={cn(
-                      "w-full p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between",
-                      paymentDetails.cardNumber === m.cardNumber
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/30"
-                    )}
-                  >
-                    <div className="flex items-center gap-4">
-                      <CreditCard size={18} className="text-muted-foreground" />
-                      <div>
-                        <p className="font-semibold">{m.cardNumber}</p>
-                        <p className="text-xs text-muted-foreground">{m.cardName} • {m.expiryDate}</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-muted-foreground" />
-                  </button>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full py-6 border-dashed gap-2 rounded-xl"
-                  onClick={() => {
-                    updatePaymentDetails({ cardNumber: '', cardName: '', expiryDate: '', cvv: '' });
-                    setView('new');
-                  }}
-                >
-                  <Plus size={18} />
-                  Use Different Card
-                </Button>
-              </motion.div>
-            )}
+            {/* Security Note */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t border-border">
+              <Lock size={14} />
+              <span>Your payment is securely processed by <strong>Stripe</strong></span>
+            </div>
 
-            {view === 'new' && (
-              <motion.div
-                key="new"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-card rounded-2xl border border-border p-6 space-y-4"
-              >
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Card number"
-                    value={paymentDetails.cardNumber}
-                    onChange={(e) => handleCardInputChange('cardNumber', e.target.value)}
-                    className={cn(inputClasses, errors.cardNumber && errorInputClasses)}
-                    maxLength={19}
-                  />
-                  {errors.cardNumber && <p className="text-destructive text-sm mt-1">{errors.cardNumber}</p>}
-                </div>
-
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Name on card"
-                    value={paymentDetails.cardName}
-                    onChange={(e) => handleCardInputChange('cardName', e.target.value)}
-                    className={cn(inputClasses, errors.cardName && errorInputClasses)}
-                  />
-                  {errors.cardName && <p className="text-destructive text-sm mt-1">{errors.cardName}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      value={paymentDetails.expiryDate}
-                      onChange={(e) => handleCardInputChange('expiryDate', e.target.value)}
-                      className={cn(inputClasses, errors.expiryDate && errorInputClasses)}
-                      maxLength={5}
-                    />
-                    {errors.expiryDate && <p className="text-destructive text-sm mt-1">{errors.expiryDate}</p>}
-                  </div>
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="CVV"
-                      value={paymentDetails.cvv}
-                      onChange={(e) => handleCardInputChange('cvv', e.target.value)}
-                      className={cn(inputClasses, errors.cvv && errorInputClasses)}
-                      maxLength={4}
-                    />
-                    {errors.cvv && <p className="text-destructive text-sm mt-1">{errors.cvv}</p>}
-                  </div>
-                </div>
-
-                {methods.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full h-8 text-xs"
-                    onClick={() => setView('list')}
-                  >
-                    Choose from saved cards
-                  </Button>
-                )}
-
-                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                  <Lock size={14} />
-                  Your payment information is encrypted and secure
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            {/* Test Card Info */}
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 text-sm">
+              <p className="font-medium text-blue-700 dark:text-blue-400 mb-1">Test Mode</p>
+              <p className="text-blue-600 dark:text-blue-300">
+                Use card: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">4242 4242 4242 4242</code>
+              </p>
+              <p className="text-blue-600 dark:text-blue-300 text-xs mt-1">
+                Any future date, any 3-digit CVC
+              </p>
+            </div>
+          </motion.div>
         </div>
       )}
 
@@ -416,7 +343,7 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
           <div className="space-y-3">
             {upiIds.map((upi) => (
               <motion.button
-                key={upi.id}
+                key={upi._id}
                 type="button"
                 onClick={() => setUpiId(upi.upiId)}
                 className={cn(
@@ -486,18 +413,19 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[
+            {([
               { id: 'apple-pay', name: 'Apple Pay', color: 'bg-black text-white' },
               { id: 'google-pay', name: 'Google Pay', color: 'bg-white border-border border text-foreground' },
               { id: 'paypal', name: 'PayPal', color: 'bg-[#003087] text-white' },
               { id: 'phone-pe', name: 'PhonePe', color: 'bg-[#5f259f] text-white' },
               { id: 'amazon-pay', name: 'Amazon Pay', color: 'bg-[#232f3e] text-white' },
               { id: 'paytm', name: 'Paytm', color: 'bg-[#00baf2] text-white' },
-            ].map((app) => (
+            ] as const).map((app) => (
               <motion.button
                 key={app.id}
                 type="button"
-                onClick={() => setSelectedApp(app.id as any)}
+                onClick={() => setSelectedApp(app.id)}
+
                 className={cn(
                   "relative p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all border-2",
                   selectedApp === app.id

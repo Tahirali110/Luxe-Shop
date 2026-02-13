@@ -3,6 +3,7 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Package, CreditCard, Truck, MapPin, Calendar, Hash, ArrowRight, Search, Download, AlertCircle } from 'lucide-react';
 import { generateInvoicePDF, InvoiceData } from '@/utils/invoiceGenerator';
+import { CartItem } from '@/store/useCartStore';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
@@ -27,19 +28,15 @@ const OrderSuccess = () => {
   }, [orderData, navigate]);
 
   // Generate stable order data using useMemo
-  const { orderIdFromState, orderDateFromState } = useMemo(() => ({
-    orderIdFromState: orderData?.id || `LXR-${Date.now().toString().slice(-8)}`,
-    orderDateFromState: orderData?.date || new Date().toLocaleDateString('en-US', {
+  const { orderNumber, orderDate, fullOrderId } = useMemo(() => ({
+    orderNumber: orderData?.shortId || orderData?.id?.toString().slice(-8).toUpperCase() || `LXR-${Date.now().toString().slice(-8)}`,
+    fullOrderId: orderData?.id || orderData?._id,
+    orderDate: orderData?.date || new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     }),
   }), [orderData]);
-
-  if (!orderData) return null;
-
-  const orderNumber = orderIdFromState;
-  const orderDate = orderDateFromState;
 
   const handleDownloadInvoice = () => {
     try {
@@ -57,7 +54,7 @@ const OrderSuccess = () => {
       const invoiceData: InvoiceData = {
         orderId: orderNumber,
         date: orderDate,
-        items: orderData.items.map((item: any) => ({
+        items: orderData.items.map((item: CartItem & { selectedColor?: string; selectedSize?: string }) => ({
           id: item.id || item.productId,
           name: item.name,
           price: item.price,
@@ -81,6 +78,8 @@ const OrderSuccess = () => {
       });
     }
   };
+
+  if (!orderData) return null;
 
   return (
     <motion.div
@@ -246,7 +245,7 @@ const OrderSuccess = () => {
                 Download Invoice
               </button>
             )}
-            <Link to={`/track-order?order=${orderNumber}`}>
+            <Link to={`/track-order?order=${fullOrderId}`}>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

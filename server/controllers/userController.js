@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
+const Order = require('../models/Order');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT
@@ -22,7 +23,9 @@ const authUser = asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
+            role: user.role,
             token: generateToken(user._id),
         });
     } else {
@@ -30,6 +33,43 @@ const authUser = asyncHandler(async (req, res) => {
         throw new Error('Invalid email or password');
     }
 });
+
+// @desc    Seed Admin Users
+const seedAdmins = async () => {
+    try {
+        // Super Admin
+        const superAdminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+        const superAdminExists = await User.findOne({ email: superAdminEmail });
+
+        if (!superAdminExists) {
+            await User.create({
+                name: 'Super Admin',
+                email: superAdminEmail,
+                password: process.env.ADMIN_PASSWORD || '123456',
+                isAdmin: true,
+                role: 'admin',
+            });
+            console.log('Super Admin seeded');
+        }
+
+        // Demo Admin
+        const demoAdminEmail = process.env.DEMO_ADMIN_EMAIL || 'demo@example.com';
+        const demoAdminExists = await User.findOne({ email: demoAdminEmail });
+
+        if (!demoAdminExists) {
+            await User.create({
+                name: 'Demo Admin',
+                email: demoAdminEmail,
+                password: process.env.DEMO_ADMIN_PASSWORD || '123456',
+                isAdmin: true,
+                role: 'demo_admin',
+            });
+            console.log('Demo Admin seeded');
+        }
+    } catch (error) {
+        console.error('Error seeding admins:', error);
+    }
+};
 
 // @desc    Register a new user
 // @route   POST /api/users
@@ -55,6 +95,7 @@ const registerUser = asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
             token: generateToken(user._id),
         });
@@ -68,19 +109,88 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id)
+        .populate('wishlist')
+        .populate('cart.product');
 
     if (user) {
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
             addresses: user.addresses,
             paymentMethods: user.paymentMethods,
             upiIds: user.upiIds,
             wishlist: user.wishlist,
+            cart: user.cart,
         });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        if (req.body.avatar !== undefined) {
+            user.avatar = req.body.avatar;
+        }
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            avatar: updatedUser.avatar,
+            isAdmin: updatedUser.isAdmin,
+            token: generateToken(updatedUser._id),
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+// @desc    Sync cart
+// @route   PUT /api/users/profile/cart
+// @access  Private
+const syncCart = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.cart = req.body.cart;
+        await user.save();
+        const updatedUser = await User.findById(user._id).populate('cart.product');
+        res.json(updatedUser.cart);
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+// @desc    Sync wishlist
+// @route   PUT /api/users/profile/wishlist
+// @access  Private
+const syncWishlist = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.wishlist = req.body.wishlist;
+        await user.save();
+        const updatedUser = await User.findById(user._id).populate('wishlist');
+        res.json(updatedUser.wishlist);
     } else {
         res.status(404);
         throw new Error('User not found');
@@ -218,14 +328,106 @@ const deleteUpi = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}).select('-password');
+    const orders = await Order.find({});
+
+    const usersWithStats = users.map(user => {
+        const userOrders = orders.filter(order => order.user.toString() === user._id.toString());
+        const totalSpent = userOrders.reduce((sum, order) => {
+            // Only count completed/paid orders or all valid orders (excluding cancelled/failed)
+            if (order.paymentStatus !== 'Failed' && order.orderStatus !== 'Cancelled') {
+                return sum + (order.totals ? order.totals.total : 0);
+            }
+            return sum;
+        }, 0);
+
+        return {
+            ...user.toObject(),
+            totalOrders: userOrders.length,
+            totalSpent
+        };
+    });
+
+    res.json(usersWithStats);
+});
+
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+const getUserById = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id).select('-password');
+
+    if (user) {
+        res.json(user);
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        user.isAdmin = req.body.isAdmin !== undefined ? req.body.isAdmin : user.isAdmin;
+
+        const updatedUser = await user.save();
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            isAdmin: updatedUser.isAdmin,
+        });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+const deleteUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+        if (user.isAdmin) {
+            res.status(400);
+            throw new Error('Cannot delete admin user');
+        }
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'User removed' });
+    } else {
+        res.status(404);
+        throw new Error('User not found');
+    }
+});
+
 module.exports = {
     authUser,
     registerUser,
     getUserProfile,
+    updateUserProfile,
     addAddress,
     deleteAddress,
     addPaymentMethod,
     deletePaymentMethod,
     addUpi,
     deleteUpi,
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+    syncCart,
+    syncWishlist,
+    seedAdmins,
 };

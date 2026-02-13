@@ -348,16 +348,16 @@ export const products: Product[] = [
         image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
         images: [
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
-          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80"
+          "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80"
         ]
       },
       {
         name: "Space Gray",
         hex: "#1a1a1a",
         price: 1349,
-        image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+        image: "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80",
         images: [
-          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+          "https://images.unsplash.com/photo-1500036714731-489689fd1ca8?w=800&q=80",
           "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80"
         ]
       }

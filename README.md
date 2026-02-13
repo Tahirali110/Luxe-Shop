@@ -1,159 +1,315 @@
-# Luxe Shop - Premium Fashion E-commerce
+<p align="center">
+  <img src="./client/public/og-image.png" alt="Luxe Shop Banner" width="100%" />
+</p>
 
-![Luxe Shop Banner](./client/public/og-image.png)
+<h1 align="center">✨ Luxe Shop — Premium Fashion E-Commerce</h1>
 
-> A modern, full-stack e-commerce platform built for luxury fashion and accessories. Designed with a focus on a premium user experience, smooth animations, and a robust MERN architecture.
+<p align="center">
+  <strong>A full-stack luxury e-commerce platform with real payments, admin dashboard, and email notifications.</strong>
+</p>
 
-![MERN Stack](https://img.shields.io/badge/MERN-Stack-000000?style=for-the-badge&logo=mongodb&logoColor=green)
-![React](https://img.shields.io/badge/React_Vite-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Status](https://img.shields.io/badge/Status-In_Development-yellow?style=for-the-badge)
+<p align="center">
+  <a href="https://luxeecom.vercel.app/"><img src="https://img.shields.io/badge/�_Live_Demo-Luxe_Shop-E8A030?style=for-the-badge" alt="Live Demo" /></a>
+  <img src="https://img.shields.io/badge/MERN-Stack-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MERN Stack" />
+  <img src="https://img.shields.io/badge/Stripe-Payments-6772E5?style=for-the-badge&logo=stripe&logoColor=white" alt="Stripe" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel" alt="Vercel" />
+</p>
 
-## 📖 About The Project
-
-**Luxe Shop** is more than just an online store; it's an attempt to recreate the luxury shopping experience digitally. The project started with a heavy focus on a highly polished, responsive Frontend using modern UI libraries and is now evolving into a complete MERN stack application.
-
-The goal is to build a scalable, secure, and feature-rich platform that handles everything from product browsing with advanced details to secure checkout and user account management.
-
-### Key Features (Frontend Ready)
-
-* ✨ **Premium UI/UX:** A clean, sophisticated design with seamless light and dark mode support.
-* 🔍 **Advanced Product Zoom:** Custom-built "Pin-Lens" magnifying glass effect on product details for a tactile feel.
-* 🛒 **Smart Cart & Wishlist:** Persistent cart management and wishlist functionality using modern state management.
-* 📱 **Fully Responsive:** Optimized experience across all devices (Mobile, Tablet, Desktop).
-* 👤 **User Dashboard UI:** Complete layouts for User Profile, Order History, Address Management, and Settings.
-* ⚡ **Blazing Fast:** Built with Vite for instant loading and smooth transitions using Framer Motion.
-
-### 🚀 Upcoming Features (Backend Integration)
-
-* 🔐 **Secure Authentication:** JWT-based login/signup with secure password hashing.
-* 🗄️ **Database Integration:** MongoDB to store real products, users, and orders.
-* 💳 **Payment Gateway:** Secure checkout integration (e.g., Stripe/Razorpay).
-* 👨‍💼 **Admin Panel:** Dedicated dashboard for product inventory and order management.
+<p align="center">
+  <img src="https://img.shields.io/badge/React_19-Vite-61DAFB?style=flat-square&logo=react" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white" />
+  <img src="https://img.shields.io/badge/Zustand-State-orange?style=flat-square" />
+  <img src="https://img.shields.io/badge/Framer_Motion-0055FF?style=flat-square&logo=framer&logoColor=white" />
+</p>
 
 ---
 
-## 🛠️ Tech Stack
+## 🖥️ Live Preview
 
-This project uses a full JavaScript stack from frontend to backend.
-
-### Frontend (`/client`)
-| Technology | Description |
-| :--- | :--- |
-| **React.js (Vite)** | The core library for building the UI, offering fast HMR. |
-| **TypeScript** | For type-safe code and better developer experience. |
-| **Tailwind CSS** | A utility-first CSS framework for rapid, responsive styling. |
-| **Shadcn UI** | Reusable, accessible components (based on Radix UI). |
-| **Framer Motion** | For powering complex animations and page transitions. |
-| **Zustand** | A small, fast, and scalable bearbones state-management solution (Cart/Wishlist). |
-
-### Backend (`/server`)
-| Technology | Description |
-| :--- | :--- |
-| **Node.js** | JavaScript runtime environment for the server. |
-| **Express.js** | Minimal and flexible Node.js web application framework for building APIs. |
-| **MongoDB & Mongoose** | NoSQL database and ODM for data modeling. |
-| **JWT (JSON Web Tokens)** | For secure user authentication and authorization. |
+> **🌐 [luxeecom.vercel.app](https://luxeecom.vercel.app)**
 
 ---
 
-## 🚀 Deployment (Vercel)
+## � Screenshots
 
-This project is configured for seamless deployment on Vercel.
-
-1.  Push your code to GitHub.
-2.  Import the project into Vercel.
-3.  Add your environment variables (`MONGO_URI`, `JWT_SECRET`) in the Vercel Project Settings.
-4.  Deploy!
-
-## 📸 Screenshots
-
-*(Replace these links with actual screenshots of your application pages. It's crucial for showcasing your work!)*
 
 | Home Page | Product Details |
 | :---: | :---: |
 | ![Home Page](./client/public/screenshots/home_page.png) | ![Product Details](./client/public/screenshots/product_details.png) |
 
-| Shopping Cart | User Profile Dashboard |
+| Shopping Cart | User Dashboard |
 | :---: | :---: |
 | ![Cart](./client/public/screenshots/cart_page.png) | ![Dashboard](./client/public/screenshots/user_dashboard.png) |
+
+| Admin Dashboard | Stripe Checkout |
+| :---: | :---: |
+| ![Admin](./client/public/screenshots/admin_dashboard.png) | ![Stripe](./client/public/screenshots/stripe_checkout.png) |
+
+---
+
+## 🎯 What Makes Luxe Shop Special?
+
+This isn't just another e-commerce template. It's a **production-ready**, **fully functional** platform with:
+
+| Feature | Description |
+| :--- | :--- |
+| 💳 **Real Stripe Payments** | Accept credit cards, debit cards — not a simulation |
+| 📧 **Email Notifications** | Order confirmations, contact form replies via Mailtrap / Nodemailer |
+| �‍💼 **Admin Dashboard** | 13-page admin panel — manage everything from one place |
+| 🔐 **JWT Authentication** | Secure login system for both Users and Admins |
+| 🌙 **Dark Mode** | Seamless theme switching across the entire app |
+| 📱 **Fully Responsive** | Pixel-perfect on mobile, tablet, and desktop |
+| ⚡ **Blazing Fast** | Vite + React SWC for instant load times |
+| 🎨 **Premium Animations** | Framer Motion for smooth page transitions and micro-interactions |
+
+---
+
+## 🏗️ Tech Stack
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### Frontend (`/client`)
+
+| Tech | Role |
+| :--- | :--- |
+| React 18 + Vite | UI Framework + Build Tool |
+| TypeScript | Type Safety |
+| Tailwind CSS | Utility-first Styling |
+| Shadcn/UI + Radix | Component Library |
+| Zustand | State Management |
+| Framer Motion | Animations |
+| React Query | Server State |
+| Stripe.js | Payment UI |
+| Recharts | Analytics Charts |
+| Lucide React | Icon System |
+
+</td>
+<td width="50%" valign="top">
+
+### Backend (`/server`)
+
+| Tech | Role |
+| :--- | :--- |
+| Node.js + Express | API Server |
+| MongoDB + Mongoose | Database + ODM |
+| JWT + Bcrypt | Auth + Encryption |
+| Stripe SDK | Payment Processing |
+| Nodemailer | Email Service |
+| Multer | File Uploads |
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📄 Pages & Features Overview
+
+### 🛍️ Customer-Facing (22 Pages)
+
+```
+🏠 Home           — Hero section, featured products, stats
+🛒 Shop           — Advanced filtering, search, category browse
+🔍 Product Detail — Color/size variants, zoom lens, reviews
+🛒 Cart           — Quantity controls, coupon codes, order summary
+💳 Checkout       — Multi-step: Shipping → Method → Payment → Review
+✅ Order Success   — Confirmation + order details
+📦 Track Order    — Real-time status tracking
+👤 Profile        — Addresses, orders, payment methods, settings
+❤️ Wishlist       — Save products for later
+🔐 Auth           — Login / Register / Forgot Password
+📞 Contact        — Contact form with email delivery
+❓ FAQ, About, Careers, Press, Legal Pages
+```
+
+### ⚙️ Admin Panel (13 Pages)
+
+```
+📊 Dashboard      — Revenue, orders, users at a glance
+📦 Products       — Full CRUD with multi-image, variant support
+🛒 Orders         — Status management (Placed → Shipped → Delivered)
+👥 Customers      — User management with order history
+⭐ Reviews        — Moderation and response
+📈 Analytics      — Sales charts, growth metrics (Recharts)
+🔔 Notifications  — System alerts and admin notifications
+📩 Inquiries      — Customer contact form management
+⚙️ Settings       — Admin preferences
+```
 
 ---
 
 ## ⚡ Getting Started
 
-Follow these steps to set up the project locally on your machine.
-
 ### Prerequisites
 
-* Node.js (v16 or higher)
-* npm or yarn
-* MongoDB installed locally or a MongoDB Atlas connection string.
+- **Node.js** v18+
+- **MongoDB Atlas** account (or local MongoDB)
+- **Stripe** test keys ([dashboard.stripe.com](https://dashboard.stripe.com/test/apikeys))
+- **Mailtrap** account ([mailtrap.io](https://mailtrap.io)) _— optional, for emails_
 
-### Installation
+### 1. Clone the Repository
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/Tahirali110/Luxe-Shop
-    cd luxe-shop
-    ```
+```bash
+git clone https://github.com/Tahirali110/Luxe-Shop.git
+cd Luxe-Shop
+```
 
-2.  **Setup Frontend (`client`)**
-    ```bash
-    cd client
-    npm install
-    # Create a .env file based on example if needed
-    # cp .env.example .env
-    ```
+### 2. Setup Backend
 
-3.  **Setup Backend (`server`)**
-    ```bash
-    cd ../server
-    npm install
-    # Important: Configure environment variables
-    # cp .env.example .env
-    ```
-
-### Environment Variables (`server/.env`)
-
-Create a `.env` file in the `server` directory and add the following:
-
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string_here
-JWT_SECRET=your_super_secret_jwt_key
-NODE_ENV=development
-
-Running the Application
-To run the full stack application locally, you need to run both the frontend and backend servers.
-
-1. Start Backend Server:
+```bash
 cd server
-npm run dev # Assuming you have nodemon set up, otherwise 'node server.js'
-// Server runs on http://localhost:5000
+npm install
+cp .env.example .env    # Then fill in your keys
+```
 
-2. Start Frontend Client (in a new terminal):
+### 3. Setup Frontend
+
+```bash
+cd ../client
+npm install
+```
+
+### 4. Run Locally
+
+Start **both** servers in separate terminals:
+
+```bash
+# Terminal 1 — Backend
+cd server
+npm run dev          # Runs on http://localhost:5000
+
+# Terminal 2 — Frontend
 cd client
-npm run dev
-// Client runs on http://localhost:5173 (usually)
+npm run dev          # Runs on http://localhost:8080
+```
 
-Open your browser and navigate to http://localhost:5173 to view the app.
+---
 
-📂 Project Structure
-The project follows a standard monorepo-style MERN structure:
+## 🔐 Environment Variables
 
+### Backend (`server/.env`)
+
+| Variable | Description |
+| :--- | :--- |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret key for JWT tokens |
+| `STRIPE_SECRET_KEY` | Stripe secret key (starts with `sk_test_`) |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (starts with `pk_test_`) |
+| `SMTP_HOST` | Email server host (e.g., `sandbox.smtp.mailtrap.io`) |
+| `SMTP_PORT` | Email server port (e.g., `2525`) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password |
+| `SMTP_FROM_EMAIL` | Sender email address |
+| `SMTP_FROM_NAME` | Sender display name |
+
+### Frontend (`client/.env`)
+
+| Variable | Description |
+| :--- | :--- |
+| `VITE_API_URL` | Backend API URL (e.g., `https://your-api.vercel.app`) |
+
+> 📝 See [`server/.env.example`](./server/.env.example) for a ready-to-use template.
+
+---
+
+## 🚀 Deployment (Vercel)
+
+This project is deployed as **two separate Vercel projects**:
+
+### Backend
+1. Import the repo → Set **Root Directory** to `server`
+2. Add all environment variables from `server/.env`
+3. `vercel.json` inside `server/` handles routing automatically
+
+### Frontend
+1. Import the repo → Set **Root Directory** to `client`
+2. **Build Command:** `npm run build`
+3. **Output Directory:** `dist`
+4. Add `VITE_API_URL` pointing to your backend URL
+
+---
+
+## 📂 Project Structure
+
+```
 luxe-shop/
-├── client/           # React Frontend Application (Vite)
-│   ├── public/       # Static assets (images, icons)
-│   ├── src/          # Components, Pages, Hooks, Context, Styles
-│   └── ...
+├── client/                    # React Frontend (Vite + TypeScript)
+│   ├── src/
+│   │   ├── admin/             # Admin Dashboard (13 pages)
+│   │   │   ├── components/    # Admin-specific components
+│   │   │   ├── pages/         # Dashboard, Products, Orders...
+│   │   │   ├── services/      # Admin API services
+│   │   │   └── stores/        # Admin state (Zustand)
+│   │   ├── components/        # Shared UI components
+│   │   │   ├── Checkout/      # Multi-step checkout flow
+│   │   │   ├── Hero/          # Landing page hero
+│   │   │   ├── Layout/        # Navbar, Footer
+│   │   │   ├── Profile/       # User profile sections
+│   │   │   └── ui/            # Shadcn UI components (50+)
+│   │   ├── pages/             # 22 user-facing pages
+│   │   ├── store/             # Zustand stores (auth, cart, wishlist...)
+│   │   ├── services/          # API service layer
+│   │   └── context/           # Theme context
+│   └── public/                # Static assets
 │
-├── server/           # Node.js & Express Backend API
-│   ├── config/       # Database connection configuration
-│   ├── controllers/  # Request handling logic
-│   ├── models/       # Mongoose Database Schemas
-│   ├── routes/       # API route definitions
-│   └── server.js     # Entry point for backend
+├── server/                    # Node.js Backend (Express)
+│   ├── config/                # Database connection
+│   ├── controllers/           # Business logic (6 controllers)
+│   ├── middleware/             # Auth & error handling
+│   ├── models/                # Mongoose schemas (5 models)
+│   ├── routes/                # API routes (7 route files)
+│   ├── utils/                 # Email utilities
+│   ├── vercel.json            # Vercel serverless config
+│   └── server.js              # Express entry point
 │
-└── README.md         # Project Documentation
+├── .gitignore                 # Security: .env, config.json excluded
+└── README.md                  # You are here!
+```
 
+---
+
+## 🔗 API Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/users/register` | User registration |
+| `POST` | `/api/users/login` | User login |
+| `GET` | `/api/users/profile` | Get user profile |
+| `GET` | `/api/products` | Get all products (with filters) |
+| `GET` | `/api/products/:id` | Get single product |
+| `POST` | `/api/products` | Create product (Admin) |
+| `PUT` | `/api/products/:id` | Update product (Admin) |
+| `DELETE` | `/api/products/:id` | Delete product (Admin) |
+| `POST` | `/api/orders` | Create new order |
+| `GET` | `/api/orders` | Get user orders |
+| `PUT` | `/api/orders/:id` | Update order status (Admin) |
+| `POST` | `/api/payments/create-intent` | Create Stripe Payment Intent |
+| `POST` | `/api/contacts` | Submit contact form |
+| `GET` | `/api/notifications` | Get notifications |
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/Tahirali110">Tahirali110</a>
+</p>

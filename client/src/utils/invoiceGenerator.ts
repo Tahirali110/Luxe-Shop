@@ -37,8 +37,9 @@ export const generateInvoicePDF = (data: InvoiceData) => {
         const pageWidth = doc.internal.pageSize.width;
 
         // Helper to format currency safely
-        const formatCurrency = (val: any) => {
-            const num = parseFloat(val);
+        const formatCurrency = (val: number | string | undefined) => {
+            if (val === undefined) return '0.00';
+            const num = typeof val === 'number' ? val : parseFloat(val);
             return isNaN(num) ? '0.00' : num.toFixed(2);
         };
 
@@ -114,7 +115,7 @@ export const generateInvoicePDF = (data: InvoiceData) => {
         });
 
         // Totals Section
-        const finalY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : 130;
+        const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ? (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable!.finalY + 10 : 130;
         const totalsX = pageWidth - 70;
 
         doc.setFontSize(10);

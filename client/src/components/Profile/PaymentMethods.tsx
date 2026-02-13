@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { fadeUp, staggerContainer } from '@/utils/animations';
 
 export const PaymentMethods = () => {
-  const { methods, fetchPayments, addPaymentMethod, removePaymentMethod, setDefaultPayment, upiIds, addUpiId, removeUpiId, setDefaultUpi, isLoading } = usePaymentStore();
+  const { methods, fetchPayments, addPaymentMethod, removePaymentMethod, setDefaultPayment, upiIds, addUpiId, removeUpiId, isLoading } = usePaymentStore();
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
 

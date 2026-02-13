@@ -3,18 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, ShoppingBag, Download } from 'lucide-react';
 import { generateInvoicePDF, InvoiceData } from '@/utils/invoiceGenerator';
-import { useCartStore } from '@/store/useCartStore';
+import { useCartStore, CartItem } from '@/store/useCartStore';
 import { CheckoutProvider, useCheckout } from '@/context/CheckoutContext';
 import { CheckoutStepper } from '@/components/Checkout/CheckoutStepper';
 import { ShippingStep } from '@/components/Checkout/ShippingStep';
 import { PaymentStep } from '@/components/Checkout/PaymentStep';
 import { ReviewStep } from '@/components/Checkout/ReviewStep';
 import { OrderSummary } from '@/components/Checkout/OrderSummary';
-import { useOrderStore, Order } from '@/store/useOrderStore';
+import { useOrderStore, Order, OrderItem } from '@/store/useOrderStore';
 import { SHIPPING_METHODS, SUPPORTED_PAYMENT_APPS } from '@/context/CheckoutContext';
 import { pageTransition, fadeUp } from '@/utils/animations';
 import { toast } from 'sonner';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+import { getStripe } from '@/lib/stripe';
+import { createPaymentIntent } from '@/services/paymentService';
 
 const CheckoutContent = () => {
   const navigate = useNavigate();
@@ -25,7 +28,11 @@ const CheckoutContent = () => {
   const [countdown, setCountdown] = useState(5);
   const [generatedOrderId, setGeneratedOrderId] = useState('');
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const lastOrderData = useRef<any>(null);
+  const lastOrderData = useRef<Order | null>(null);
+
+  // Stripe hooks
+  const stripe = useStripe();
+  const elements = useElements();
 
   // Countdown timer after order complete
   useEffect(() => {
@@ -33,8 +40,7 @@ const CheckoutContent = () => {
       countdownRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            clearInterval(countdownRef.current!);
-            navigate('/order-success', { state: { orderData: lastOrderData.current } });
+            if (countdownRef.current) clearInterval(countdownRef.current);
             return 0;
           }
           return prev - 1;
@@ -47,7 +53,14 @@ const CheckoutContent = () => {
         }
       };
     }
-  }, [orderComplete, navigate]);
+  }, [orderComplete]);
+
+  // Handle navigation when countdown reaches 0
+  useEffect(() => {
+    if (orderComplete && countdown === 0) {
+      navigate('/order-success', { state: { orderData: lastOrderData.current } });
+    }
+  }, [orderComplete, countdown, navigate]);
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1);
@@ -66,6 +79,61 @@ const CheckoutContent = () => {
 
   const handlePlaceOrder = async () => {
     setIsProcessing(true);
+
+    // Sync shipping method from form to store to ensure accurate totals calculation
+    useCartStore.getState().setShippingMethod(formData.shippingMethod as any);
+
+    const totalAmount = useCartStore.getState().getTotal();
+    let paymentIntentId: string | null = null;
+
+    // Process Stripe payment for credit card
+    if (formData.paymentMethod === 'credit-card') {
+      if (!stripe || !elements) {
+        toast.error('Payment system not ready. Please refresh and try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      try {
+        // Step 1: Create PaymentIntent on backend
+        const { clientSecret, paymentIntentId: intentId } = await createPaymentIntent(totalAmount);
+        paymentIntentId = intentId;
+
+        // Step 2: Confirm payment with Stripe using stored PaymentMethod ID
+        const { stripePaymentMethodId } = formData;
+
+        if (!stripePaymentMethodId) {
+          toast.error('Payment information missing. Please try again.');
+          setIsProcessing(false);
+          return;
+        }
+
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: stripePaymentMethodId,
+        });
+
+        if (error) {
+          console.error('Payment error:', error);
+          toast.error(error.message || 'Payment failed. Please try again.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (paymentIntent?.status !== 'succeeded') {
+          toast.error('Payment was not successful. Please try again.');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Payment successful!
+        toast.success('Payment processed successfully!');
+      } catch (err: any) {
+        console.error('Payment processing error:', err);
+        toast.error(err.message || 'Failed to process payment');
+        setIsProcessing(false);
+        return;
+      }
+    }
 
     // Construct order data compatible with backend
     const orderPayload = {
@@ -93,13 +161,17 @@ const CheckoutContent = () => {
       paymentMethod: formData.paymentMethod === 'credit-card' ? 'Credit Card' :
         formData.paymentMethod === 'upi' ? 'UPI' :
           formData.paymentMethod === 'wallet-apps' ? 'Wallet' : 'COD',
+      paymentStatus: formData.paymentMethod === 'credit-card' ? 'Completed' : 'Pending',
+      paymentIntentId: paymentIntentId,
       totals: {
         subtotal: useCartStore.getState().getSubtotal(),
         shipping: useCartStore.getState().getShipping(),
         tax: useCartStore.getState().getTax(),
-        total: useCartStore.getState().getTotal(),
+        total: totalAmount,
       },
-      // Note: user ID is handled by backend via token
+      shippingMethodId: formData.shippingMethod,
+      shippingMethodName: SHIPPING_METHODS.find(m => m.id === formData.shippingMethod)?.name || 'Standard Shipping',
+      estimatedDelivery: SHIPPING_METHODS.find(m => m.id === formData.shippingMethod)?.duration || '5-7 business days',
     };
 
     try {
@@ -123,21 +195,24 @@ const CheckoutContent = () => {
       // Real API Call
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/orders`, orderPayload, config);
 
-      const orderId = data._id; // Use real ID from backend
-      setGeneratedOrderId(orderId);
+      const selectedMethod = SHIPPING_METHODS.find(m => m.id === formData.shippingMethod) || SHIPPING_METHODS[0];
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = now.toLocaleDateString();
 
-      // Store in ref for Invoice/Success page (formatting specific to success page expectation)
+      // Store in ref for Invoice/Success page
       lastOrderData.current = {
         ...data,
-        orderId: data._id, // Map _id to orderId for invoice gen if needed
         id: data._id,
-        date: new Date(data.createdAt).toLocaleDateString(),
-        // Ensure items structure matches if needed for display
+        shortId: data._id.toString().slice(-8).toUpperCase(),
+        date: dateStr,
+        placedAt: `${dateStr} ${timeStr}`,
+        paymentConfirmedAt: `${dateStr} ${timeStr}`,
+        shippingMethodName: selectedMethod.name,
+        estimatedDelivery: selectedMethod.duration,
+        // Ensure items structure matches
         items: items.map(item => ({ ...item, id: item.productId.toString() }))
       };
-
-      // Save to global order store (optional if fetching from backend later, but good for immediate UI update)
-      // useOrderStore.getState().addOrder(data); // Might need type alignment or fetching from backend
 
       // Success: Clear cart and show confirmation
       clearCart();
@@ -150,9 +225,12 @@ const CheckoutContent = () => {
         description: 'Check your email for confirmation details.',
       });
 
-    } catch (error: any) {
+    } catch (error) {
       setIsProcessing(false);
-      const errorMsg = error.response?.data?.message || 'Failed to place order';
+      let errorMsg = 'Failed to place order';
+      if (axios.isAxiosError<{ message: string }>(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      }
       toast.error(errorMsg);
       console.error('Order placement failed:', error);
     }
@@ -225,21 +303,29 @@ const CheckoutContent = () => {
                 const data = lastOrderData.current;
                 if (data) {
                   const invoiceData: InvoiceData = {
-                    orderId: data.orderId,
-                    date: data.date,
-                    items: data.items.map((item: any) => ({
-                      id: item.id || item.productId,
+                    orderId: data.orderId || data._id,
+                    date: data.date || new Date(data.createdAt).toLocaleDateString(),
+                    items: data.items.map((item: OrderItem) => ({
+                      id: item.productId,
                       name: item.name,
                       price: item.price,
                       quantity: item.quantity,
-                      selectedColor: item.color || item.selectedColor,
-                      selectedSize: item.size || item.selectedSize,
+                      selectedColor: item.selectedColor,
+                      selectedSize: item.selectedSize,
                     })),
                     subtotal: data.totals.subtotal,
                     shipping: data.totals.shipping,
                     tax: data.totals.tax,
                     total: data.totals.total,
-                    shippingAddress: data.shippingAddress,
+                    shippingAddress: {
+                      name: `${data.shippingAddress.firstName} ${data.shippingAddress.lastName}`,
+                      address: data.shippingAddress.addressLine1 + (data.shippingAddress.addressLine2 ? `, ${data.shippingAddress.addressLine2}` : ''),
+                      city: data.shippingAddress.city,
+                      state: data.shippingAddress.state,
+                      zipCode: data.shippingAddress.zipCode,
+                      email: data.shippingAddress.email,
+                      phone: data.shippingAddress.phone,
+                    },
                     paymentMethod: 'Credit Card',
                   };
                   generateInvoicePDF(invoiceData);
@@ -370,9 +456,11 @@ const CheckoutContent = () => {
 
 const Checkout = () => {
   return (
-    <CheckoutProvider>
-      <CheckoutContent />
-    </CheckoutProvider>
+    <Elements stripe={getStripe()}>
+      <CheckoutProvider>
+        <CheckoutContent />
+      </CheckoutProvider>
+    </Elements>
   );
 };
 

@@ -1,41 +1,58 @@
 const express = require('express');
-const Product = require('../models/Product');
-
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
+const { admin } = require('../middleware/adminMiddleware');
+const {
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    getProducts,
+    getProductById,
+    createProductReview,
+    updateProductReview,
+    deleteProductReview,
+    replyToReview
+} = require('../controllers/productController');
 
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
-router.get('/', async (req, res) => {
-    try {
-        const products = await Product.find({});
-        res.status(200).json(products);
-    } catch (error) {
-        console.error('Error fetching products:', error.message);
-        res.status(500).json({ message: 'Server error while fetching products' });
-    }
-});
+router.get('/', getProducts);
 
 // @desc    Get single product by ID
 // @route   GET /api/products/:id
 // @access  Public
-router.get('/:id', async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
+router.get('/:id', getProductById);
 
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
+// @desc    Create/Update review
+// @route   POST/PUT /api/products/:id/reviews
+// @access  Private
+router.post('/:id/reviews', protect, createProductReview);
+router.put('/:id/reviews', protect, updateProductReview);
 
-        res.status(200).json(product);
-    } catch (error) {
-        console.error('Error fetching product:', error.message);
-        // Handle invalid ObjectId format
-        if (error.kind === 'ObjectId') {
-            return res.status(404).json({ message: 'Product not found' });
-        }
-        res.status(500).json({ message: 'Server error while fetching product' });
-    }
-});
+// @desc    Delete review
+// @route   DELETE /api/products/:id/reviews/:reviewId
+// @access  Private/Admin
+router.delete('/:id/reviews/:reviewId', protect, admin, deleteProductReview);
+
+// @desc    Reply to review
+// @route   PUT /api/products/:id/reviews/:reviewId/reply
+// @access  Private/Admin
+router.put('/:id/reviews/:reviewId/reply', protect, admin, replyToReview);
+
+// @desc    Create a product
+// @route   POST /api/products
+// @access  Private/Admin
+router.post('/', protect, admin, createProduct);
+
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private/Admin
+router.put('/:id', protect, admin, updateProduct);
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private/Admin
+router.delete('/:id', protect, admin, deleteProduct);
 
 module.exports = router;

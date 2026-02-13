@@ -67,6 +67,7 @@ export interface CheckoutFormData {
   upiId: string;
   agreeToTerms: boolean;
   appliedCoupon: CouponData | null;
+  stripePaymentMethodId?: string;
 }
 
 interface CheckoutContextType {
@@ -79,6 +80,7 @@ interface CheckoutContextType {
   setSelectedApp: (appId: PaymentAppId) => void;
   updatePaymentDetails: (data: Partial<PaymentDetails>) => void;
   setUpiId: (id: string) => void;
+  setStripePaymentMethodId: (id: string) => void;
   setAgreeToTerms: (agree: boolean) => void;
   resetCheckout: () => void;
   getShippingCost: () => number;
@@ -110,6 +112,7 @@ const initialFormData: CheckoutFormData = {
   upiId: '',
   agreeToTerms: false,
   appliedCoupon: null,
+  stripePaymentMethodId: undefined,
 };
 
 const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined);
@@ -121,7 +124,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Sync shipping method to cart store on mount
     useCartStore.getState().setShippingMethod(formData.shippingMethod);
-  }, []);
+  }, [formData.shippingMethod]);
 
   const updateShippingAddress = (data: Partial<ShippingAddress>) => {
     setFormData(prev => ({
@@ -154,6 +157,10 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
     setFormData(prev => ({ ...prev, upiId: id }));
   };
 
+  const setStripePaymentMethodId = (id: string) => {
+    setFormData(prev => ({ ...prev, stripePaymentMethodId: id }));
+  };
+
   const setAgreeToTerms = (agree: boolean) => {
     setFormData(prev => ({ ...prev, agreeToTerms: agree }));
   };
@@ -180,6 +187,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
         setSelectedApp,
         updatePaymentDetails,
         setUpiId,
+        setStripePaymentMethodId,
         setAgreeToTerms,
         resetCheckout,
         getShippingCost,

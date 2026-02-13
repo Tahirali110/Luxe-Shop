@@ -13,14 +13,17 @@ export interface OrderItem {
     selectedColor: string;
     selectedSize: string;
     image: string;
+    isReviewed?: boolean;
 }
 
 export interface Order {
-    placedAt: any;
-    id: any | string;
+    placedAt?: string;
+    id?: string;
     shippingMethodName: string;
-    estimatedDelivery: any | string;
+    estimatedDelivery?: string;
     trackingNumber: string;
+    orderId?: string;
+    date?: string;
     _id: string;
     user: string;
     items: OrderItem[];
@@ -44,8 +47,9 @@ export interface Order {
         tax: number;
         total: number;
     };
-    status: 'placed' | 'processing' | 'shipped' | 'delivered';
+    orderStatus: 'Placed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
     createdAt: string;
+    updatedAt?: string;
 }
 
 interface OrderState {

@@ -10,7 +10,7 @@ const testimonials = [
     role: 'Fashion Blogger',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
     rating: 5,
-    comment: 'Luxe has completely transformed my wardrobe. The quality is unmatched, and I love knowing my purchases support sustainable practices.',
+    comment: 'Luxe has elevated my style with unmatched quality and sustainable fashion I can feel good about.',
   },
   {
     id: 2,

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product } from '@/types/product';
+import authService from '@/services/authService';
 import { SHIPPING_COST, SHIPPING_THRESHOLD, TAX_RATE, SHIPPING_COST_EXPRESS, SHIPPING_COST_OVERNIGHT } from '@/utils/constants';
 import { toast } from 'sonner';
 
@@ -30,6 +31,7 @@ interface CartState {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  setItems: (items: CartItem[]) => void;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -59,38 +61,24 @@ export const useCartStore = create<CartState>()(
       shippingMethod: 'standard',
 
       addItem: (product, color, colorHex, size, customPrice) => {
-        // Use _id from MongoDB, fallback to id if strictly needed by TS until fully migrated
-        const productId = product._id;
-        const id = `${productId}-${color}-${size || 'default'}`;
-
-        // Handle optional colors array
-        const colorVariant = product.colors?.find(c => c.name === color);
-        const finalPrice = customPrice !== undefined ? customPrice : product.price;
-
         set((state) => {
-          const existingItem = state.items.find(item => item.id === id);
+          // Use _id from MongoDB, fallback to id if strictly needed by TS until fully migrated
+          const productId = product._id;
+          const id = `${productId}-${color}-${size || 'default'}`;
 
-          if (existingItem) {
-            toast.success('Cart updated', {
-              description: `${product.name} quantity increased`,
-              icon: '✓',
-            });
-            return {
-              items: state.items.map(item =>
-                item.id === id
-                  ? { ...item, quantity: item.quantity + 1 }
-                  : item
-              ),
-            };
-          }
+          // Handle optional colors array
+          const colorVariant = product.colors?.find(c => c.name === color);
+          const finalPrice = customPrice !== undefined ? customPrice : product.price;
 
-          toast.success('Added to cart', {
-            description: `${product.name} has been added`,
-            icon: '✓',
-          });
+          const existingItem = state.items.find((item) => item.id === id);
 
-          return {
-            items: [
+          const newItems = existingItem
+            ? state.items.map(item =>
+              item.id === id
+                ? { ...item, quantity: item.quantity + 1 }
+                : item
+            )
+            : [
               ...state.items,
               {
                 id,
@@ -103,15 +91,53 @@ export const useCartStore = create<CartState>()(
                 size,
                 quantity: 1,
               },
-            ],
-          };
+            ];
+
+          // Sync with database if logged in
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.token) {
+              const dbCart = newItems.map(item => ({
+                product: item.productId,
+                color: item.color,
+                size: item.size,
+                quantity: item.quantity
+              }));
+              authService.syncCart(dbCart, user.token).catch(console.error);
+            }
+          }
+
+          // Show success notification
+          toast.success('Added to cart!', {
+            description: `${product.name} (${color}${size ? `, ${size}` : ''})`,
+            icon: '✓',
+          });
+
+          return { items: newItems };
         });
       },
 
       removeItem: (id) => {
-        set((state) => ({
-          items: state.items.filter(item => item.id !== id),
-        }));
+        set((state) => {
+          const newItems = state.items.filter(item => item.id !== id);
+
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.token) {
+              const dbCart = newItems.map(item => ({
+                product: item.productId,
+                color: item.color,
+                size: item.size,
+                quantity: item.quantity
+              }));
+              authService.syncCart(dbCart, user.token).catch(console.error);
+            }
+          }
+
+          return { items: newItems };
+        });
       },
 
       updateQuantity: (id, quantity) => {
@@ -120,14 +146,41 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
-        set((state) => ({
-          items: state.items.map(item =>
+        set((state) => {
+          const newItems = state.items.map(item =>
             item.id === id ? { ...item, quantity } : item
-          ),
-        }));
+          );
+
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.token) {
+              const dbCart = newItems.map(item => ({
+                product: item.productId,
+                color: item.color,
+                size: item.size,
+                quantity: item.quantity
+              }));
+              authService.syncCart(dbCart, user.token).catch(console.error);
+            }
+          }
+
+          return { items: newItems };
+        });
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => {
+        set({ items: [] });
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          if (user.token) {
+            authService.syncCart([], user.token).catch(console.error);
+          }
+        }
+      },
+
+      setItems: (items) => set({ items }),
 
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),

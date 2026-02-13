@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Star, Heart, Minus, Plus, ShoppingBag, Truck, Shield, RotateCcw, Ruler, AlertTriangle, ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -48,12 +48,13 @@ const ProductDetail = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
   const [quantity, setQuantity] = useState(1);
+  const [activeTab, setActiveTab] = useState('description');
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [showLens, setShowLens] = useState(false);
   const [lensPosition, setLensPosition] = useState({ x: 0, y: 0 });
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [imageNatural, setImageNatural] = useState<{ w: number; h: number } | null>(null);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
-  const [isAddedToCart, setIsAddedToCart] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
   const [relatedScrollIndex, setRelatedScrollIndex] = useState(0);
 
@@ -70,14 +71,37 @@ const ProductDetail = () => {
 
       try {
         const response = await axios.get<Product>(`${API_URL}/api/products/${id}`);
-        setProduct(response.data);
+        const productData = response.data;
+        setProduct(productData);
+
+        // Auto-select size with maximum stock for the initial color
+        if (productData.sizes && productData.sizes.length > 0) {
+          const initialColor = productData.colors?.[0]?.name || 'Default';
+          let maxStock = -1;
+          let bestSize = productData.sizes[0];
+
+          productData.sizes.forEach(size => {
+            let stock = productData.stock;
+            if (productData.variantStock && productData.variantStock.length > 0) {
+              const variant = productData.variantStock.find(
+                v => v.color === initialColor && v.size === size
+              );
+              stock = variant ? variant.stock : 0;
+            }
+            if (stock > maxStock) {
+              maxStock = stock;
+              bestSize = size;
+            }
+          });
+          setSelectedSize(bestSize);
+        }
 
         // Fetch related products (same category)
         try {
           // Ideally this should be a separate endpoint like /api/products?category=X
           const allProductsRes = await axios.get<Product[]>(`${API_URL}/api/products`);
           const related = allProductsRes.data
-            .filter(p => p.category === response.data.category && p._id !== response.data._id)
+            .filter(p => p.category === productData.category && p._id !== productData._id)
             .slice(0, 6);
           setRelatedProducts(related);
         } catch (err) {
@@ -89,47 +113,71 @@ const ProductDetail = () => {
         setError('Failed to load product details.');
       } finally {
         setIsLoading(false);
-        setIsAddedToCart(false);
       }
     };
 
     fetchProduct();
   }, [id]);
 
-  const selectedColor = product?.colors && product.colors.length > 0
-    ? product.colors[selectedColorIndex]
-    : { name: 'Default', hex: '#000000', image: product?.image || '' };
+  const selectedColor = useMemo(() => {
+    if (product?.colors && product.colors.length > 0) {
+      return product.colors[selectedColorIndex];
+    }
+    return { name: 'Default', hex: '#000000', image: product?.image || '' };
+  }, [product, selectedColorIndex]);
 
-  // Calculate dynamic price based on color and size
-  const currentPrice = useMemo(() => {
-    if (!product || !selectedColor) return 0;
+  // Calculate dynamic prices based on color and size
+  const { price: currentPrice, originalPrice: currentOriginalPrice } = useMemo(() => {
+    if (!product || !selectedColor) return { price: 0, originalPrice: undefined };
+
     let price = selectedColor.price || product.price;
+    let originalPrice = selectedColor.originalPrice || product.originalPrice;
+
     if (selectedSize && product.sizePriceAdjustments && product.sizePriceAdjustments[selectedSize]) {
       price += product.sizePriceAdjustments[selectedSize];
+      // Note: originalPrice could also be adjusted if desired, but usually it's static
     }
-    return price;
+
+    return { price, originalPrice };
   }, [product, selectedColor, selectedSize]);
+
+  // Get variant-specific stock (returns variant stock if available, else global stock)
+  const getVariantStock = useCallback((color: string, size: string | undefined): number => {
+    if (!product) return 0;
+
+    // If variantStock exists and has entries, use variant-specific stock
+    if (product.variantStock && product.variantStock.length > 0) {
+      const variant = product.variantStock.find(
+        v => v.color === color && v.size === (size || '')
+      );
+      return variant ? variant.stock : 0;
+    }
+
+    // Fallback to global stock if no variant stock is defined
+    return product.stock;
+  }, [product]);
+
+  // Current stock based on selected color and size
+  const currentStock = useMemo(() => {
+    if (!product) return 0;
+    return getVariantStock(selectedColor.name, selectedSize);
+  }, [product, selectedColor.name, selectedSize, getVariantStock]);
 
   // Safe ID check for wishlist
   const productId = product?._id || '';
   const inWishlist = productId ? isInWishlist(productId) : false;
 
+  const handleReviewClick = () => {
+    setActiveTab('reviews');
+    tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
-
-    if (isAddedToCart) {
-      navigate('/cart');
-      return;
-    }
 
     for (let i = 0; i < quantity; i++) {
       addItem(product, selectedColor.name, selectedColor.hex, selectedSize || product.sizes?.[0], currentPrice);
     }
-    toast.success('Added to cart!', {
-      description: `${product.name} (${selectedColor.name}${selectedSize ? `, ${selectedSize}` : ''}) x ${quantity}`,
-      icon: '✓',
-    });
-    setIsAddedToCart(true);
   };
 
   const handleWishlistToggle = () => {
@@ -348,7 +396,10 @@ const ProductDetail = () => {
               </p>
               <h1 className="font-display text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
 
-              <div className="flex items-center gap-3 mb-6">
+              <div
+                className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-70 transition-opacity w-fit"
+                onClick={handleReviewClick}
+              >
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} size={18} className={i < Math.floor(product.rating || 0) ? 'fill-primary text-primary' : 'text-muted-foreground'} />
@@ -367,11 +418,11 @@ const ProductDetail = () => {
                 >
                   ${currentPrice}
                 </motion.span>
-                {product.originalPrice && (
+                {currentOriginalPrice && (
                   <>
-                    <span className="text-xl text-muted-foreground line-through">${product.originalPrice}</span>
+                    <span className="text-xl text-muted-foreground line-through">${currentOriginalPrice}</span>
                     <span className="px-2 py-1 bg-destructive/10 text-destructive text-sm font-medium rounded-lg">
-                      Save ${product.originalPrice - product.price}
+                      Save ${currentOriginalPrice - currentPrice}
                     </span>
                   </>
                 )}
@@ -379,18 +430,18 @@ const ProductDetail = () => {
 
               <p className="text-muted-foreground leading-relaxed mb-6">{product.longDescription || product.description}</p>
 
-              {product.stock <= 5 && product.stock > 0 && (
+              {currentStock <= 5 && currentStock > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-xl mb-6"
                 >
                   <AlertTriangle size={18} />
-                  <span className="text-sm font-medium">Hurry! Only {product.stock} left in stock</span>
+                  <span className="text-sm font-medium">Hurry! Only {currentStock} left in stock</span>
                 </motion.div>
               )}
 
-              {product.stock === 0 && (
+              {currentStock === 0 && (
                 <div className="flex items-center gap-2 p-3 bg-secondary text-muted-foreground rounded-xl mb-6 border border-border">
                   <AlertTriangle size={18} />
                   <span className="text-sm font-medium text-destructive">Currently Out of Stock</span>
@@ -481,7 +532,7 @@ const ProductDetail = () => {
               <div className="hidden lg:block mb-8">
                 <h3 className="font-medium mb-3">Quantity</h3>
                 <div className="flex items-center gap-4">
-                  <div className={`flex items-center bg-secondary rounded-xl ${product.stock === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className={`flex items-center bg-secondary rounded-xl ${currentStock === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -494,7 +545,7 @@ const ProductDetail = () => {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
                       className="p-3 hover:bg-background/50 rounded-r-xl transition-colors"
                     >
                       <Plus size={18} />
@@ -505,27 +556,14 @@ const ProductDetail = () => {
 
               <div className="hidden lg:flex gap-4 mb-8">
                 <Button
-                  disabled={product.stock === 0}
+                  disabled={currentStock === 0}
                   onClick={handleAddToCart}
-                  className={`flex-1 h-16 rounded-2xl font-semibold shadow-lg transition-all text-lg ${isAddedToCart
-                    ? 'bg-gradient-to-r from-primary to-accent hover:opacity-90'
-                    : product.stock === 0 ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground shadow-primary/25'
+                  className={`flex-1 h-16 rounded-2xl font-semibold shadow-lg transition-all text-lg ${currentStock === 0 ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground shadow-primary/25'
                     }`}
                 >
                   <AnimatePresence mode="wait">
-                    {product.stock === 0 ? (
+                    {currentStock === 0 ? (
                       <motion.span key="outofstock">Out of Stock</motion.span>
-                    ) : isAddedToCart ? (
-                      <motion.div
-                        key="buy"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="flex items-center gap-2"
-                      >
-                        <Check size={20} />
-                        Buy Now
-                      </motion.div>
                     ) : (
                       <motion.div
                         key="add"
@@ -572,28 +610,32 @@ const ProductDetail = () => {
             </motion.div>
           </div>
 
-          <ProductTabs
-            description={product.longDescription || product.description}
-            details={{
-              material: 'Premium quality fabric blend - 60% Cotton, 35% Polyester, 5% Elastane',
-              care: 'Machine wash cold with like colors. Tumble dry low. Do not bleach.',
-              features: product.features || [
-                'Premium quality construction',
-                'Comfortable fit for all-day wear',
-                'Breathable and lightweight fabric',
-                'Durable and long-lasting',
-              ],
-              specifications: {
-                'SKU': `NXS-${product._id.substring(0, 6).toUpperCase()}`,
-                'Category': product.category,
-                'Stock': product.stock > 0 ? `${product.stock} units available` : 'Out of Stock',
-                'Warranty': '2 years',
-              },
-            }}
-            reviews={product.reviews || []}
-            avgRating={product.rating ? product.rating.toString() : "0"}
-            totalReviews={product.reviewsCount || 0}
-          />
+          <div ref={tabsRef}>
+            <ProductTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              description={product.longDescription || product.description}
+              details={{
+                material: 'Premium quality fabric blend - 60% Cotton, 35% Polyester, 5% Elastane',
+                care: 'Machine wash cold with like colors. Tumble dry low. Do not bleach.',
+                features: product.features || [
+                  'Premium quality construction',
+                  'Comfortable fit for all-day wear',
+                  'Breathable and lightweight fabric',
+                  'Durable and long-lasting',
+                ],
+                specifications: {
+                  'SKU': `NXS-${product._id.substring(0, 6).toUpperCase()}`,
+                  'Category': product.category,
+                  'Stock': currentStock > 0 ? `${currentStock} units available` : 'Out of Stock',
+                  'Warranty': '2 years',
+                },
+              }}
+              reviews={product.reviews || []}
+              avgRating={product.rating ? product.rating.toString() : "0"}
+              totalReviews={product.reviewsCount || 0}
+            />
+          </div>
 
           {relatedProducts.length > 0 && (
             <section className="mt-20">
@@ -651,8 +693,8 @@ const ProductDetail = () => {
             >
               ${currentPrice}
             </motion.p>
-            {product.originalPrice && (
-              <p className="text-xs text-muted-foreground line-through">${product.originalPrice}</p>
+            {currentOriginalPrice && (
+              <p className="text-xs text-muted-foreground line-through">${currentOriginalPrice}</p>
             )}
           </div>
 
@@ -675,19 +717,12 @@ const ProductDetail = () => {
           </div>
 
           <Button
-            disabled={product.stock === 0}
+            disabled={currentStock === 0}
             onClick={handleAddToCart}
-            className={`flex-1 h-12 rounded-xl font-semibold transition-all ${isAddedToCart
-              ? 'bg-gradient-to-r from-primary to-accent'
-              : product.stock === 0 ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground'
+            className={`flex-1 h-12 rounded-xl font-semibold transition-all ${currentStock === 0 ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground'
               }`}
           >
-            {product.stock === 0 ? "Out of Stock" : isAddedToCart ? (
-              <div className="flex items-center gap-2">
-                <Check size={18} />
-                Buy Now
-              </div>
-            ) : (
+            {currentStock === 0 ? "Out of Stock" : (
               <div className="flex items-center gap-2">
                 <ShoppingBag size={18} />
                 Add to Cart

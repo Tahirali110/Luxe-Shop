@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
+import { MapPin, Plus, Edit2, Trash2, Check, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { fadeUp, staggerContainer } from '@/utils/animations';
-import { useAddressStore } from '@/store/useAddressStore';
+import { useAddressStore, Address } from '@/store/useAddressStore';
 
 const emptyAddress = {
   label: '',
@@ -21,8 +21,8 @@ const emptyAddress = {
   lastName: '',
   email: '',
   phone: '',
-  address: '',
-  apartment: '',
+  addressLine1: '',
+  addressLine2: '',
   city: '',
   state: '',
   zipCode: '',
@@ -72,7 +72,7 @@ export const AddressManager = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (address: any) => {
+  const handleOpenEditModal = (address: Address) => {
     setEditingId(address._id);
     setFormData({
       label: address.label,
@@ -105,6 +105,7 @@ export const AddressManager = () => {
         await addAddress(formData);
         toast.success('Address added');
       }
+      await fetchAddresses(); // Force sync with backend
       setIsModalOpen(false);
     } catch (error) {
       toast.error('Failed to save address');
@@ -118,6 +119,7 @@ export const AddressManager = () => {
       return;
     }
     await removeAddress(id);
+    await fetchAddresses(); // Force sync
     toast.success('Address deleted');
   };
 
@@ -253,12 +255,21 @@ export const AddressManager = () => {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="address">Street Address *</Label>
+              <Label htmlFor="addressLine1">Street Address *</Label>
               <Input
-                id="address"
+                id="addressLine1"
                 placeholder="123 Main Street"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                value={formData.addressLine1}
+                onChange={(e) => setFormData(prev => ({ ...prev, addressLine1: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="addressLine2">Apartment, Suite, etc. (Optional)</Label>
+              <Input
+                id="addressLine2"
+                placeholder="Apt 4B"
+                value={formData.addressLine2}
+                onChange={(e) => setFormData(prev => ({ ...prev, addressLine2: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
