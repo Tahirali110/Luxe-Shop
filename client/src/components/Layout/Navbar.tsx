@@ -43,16 +43,14 @@ const Navbar = () => {
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-background/70 backdrop-blur-xl border-b border-border/50 shadow-sm' 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+          ? 'bg-background/70 backdrop-blur-xl border-b border-border/50 shadow-sm'
           : 'bg-background/95 backdrop-blur-sm'
-      }`}
+        }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between transition-all duration-300 ${
-          isScrolled ? 'h-14 lg:h-16' : 'h-16 lg:h-20'
-        }`}>
+        <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'h-14 lg:h-16' : 'h-16 lg:h-20'
+          }`}>
           {/* Logo + Search Compact */}
           <div className="flex items-center gap-4 lg:gap-6">
             <Link to="/" className="flex-shrink-0">
@@ -78,16 +76,14 @@ const Navbar = () => {
               return (
                 <Link key={link.label} to={link.href}>
                   <motion.span
-                    className={`text-sm font-medium transition-colors relative ${
-                      isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`text-sm font-medium transition-colors relative ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     whileHover={{ y: -2 }}
                   >
                     {link.label}
-                    <span 
-                      className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
-                      }`} 
+                    <span
+                      className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                        }`}
                     />
                     {!isActive && (
                       <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary hover:w-full transition-all duration-300 group-hover:w-full" />
@@ -221,9 +217,25 @@ const Navbar = () => {
               <div className="py-4 space-y-4">
                 {/* Mobile Search */}
                 <SmartSearch isMobile onClose={() => setIsMobileMenuOpen(false)} />
-                
+
                 {/* Mobile Nav Links */}
                 <nav className="space-y-1">
+                  {/* Mobile Profile Link */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0 }}
+                  >
+                    <Link
+                      to={user ? '/profile' : '/auth'}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 py-3 px-2 text-sm font-medium rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      <User size={18} />
+                      {user ? 'My Profile' : 'Login / Register'}
+                    </Link>
+                  </motion.div>
+
                   {NAV_ITEMS.map((link, index) => {
                     const isActive = isActiveLink(link.href);
                     return (
@@ -231,16 +243,15 @@ const Navbar = () => {
                         key={link.label}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                        transition={{ delay: (index + 1) * 0.05 }}
                       >
                         <Link
                           to={link.href}
                           onClick={() => setIsMobileMenuOpen(false)}
-                          className={`block py-3 px-2 text-sm font-medium rounded-lg transition-colors ${
-                            isActive 
-                              ? 'text-foreground bg-secondary/50 border-l-2 border-primary' 
+                          className={`block py-3 px-2 text-sm font-medium rounded-lg transition-colors ${isActive
+                              ? 'text-foreground bg-secondary/50 border-l-2 border-primary'
                               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                          }`}
+                            }`}
                         >
                           {link.label}
                         </Link>

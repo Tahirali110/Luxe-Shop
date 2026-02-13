@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+import { forwardRef } from 'react';
+
 // Promo codes are now managed in the persisted cart store
-const CartItemRow = ({ item }: { item: CartItem }) => {
+const CartItemRow = forwardRef<HTMLDivElement, { item: CartItem }>(({ item }, ref) => {
   const { updateQuantity, removeItem } = useCartStore();
   const [isRemoving, setIsRemoving] = useState(false);
   const [pendingRemove, setPendingRemove] = useState(false);
@@ -35,11 +37,12 @@ const CartItemRow = ({ item }: { item: CartItem }) => {
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 1, scale: 1, x: 0 }}
-      animate={isRemoving ? { 
-        opacity: 0, 
-        scale: 0.6, 
+      animate={isRemoving ? {
+        opacity: 0,
+        scale: 0.6,
         x: -100,
         transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
       } : { opacity: 1, scale: 1, x: 0 }}
@@ -119,7 +122,7 @@ const CartItemRow = ({ item }: { item: CartItem }) => {
       </div>
     </motion.div>
   );
-};
+});
 
 // Shipping Progress Component
 const ShippingMeter = ({ subtotal }: { subtotal: number }) => {
@@ -128,7 +131,7 @@ const ShippingMeter = ({ subtotal }: { subtotal: number }) => {
   const isFreeShipping = subtotal >= SHIPPING_THRESHOLD;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={`p-4 rounded-2xl ${isFreeShipping ? 'bg-primary/10' : 'bg-secondary/50'}`}
@@ -151,8 +154,8 @@ const ShippingMeter = ({ subtotal }: { subtotal: number }) => {
         )}
       </div>
       <div className="relative">
-        <Progress 
-          value={progress} 
+        <Progress
+          value={progress}
           className={`h-2 ${isFreeShipping ? 'bg-primary/20' : 'bg-muted'}`}
         />
         {isFreeShipping && (
@@ -190,9 +193,7 @@ const PromoCodeSection = () => {
     setIsApplying(false);
     setCouponCode('');
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3e34ee89-e415-44aa-ad50-a9a60ca8d5a2',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({location:'src/pages/Cart.tsx:PromoCodeSection',message:'Promo apply beacon',data:{enteredCode:couponCode.toUpperCase().trim()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
+
   };
 
   return (
@@ -265,11 +266,7 @@ const Cart = () => {
   const total = getTotal();
   const isFreeShipping = shipping === 0 && subtotal > 0;
 
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/3e34ee89-e415-44aa-ad50-a9a60ca8d5a2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/Cart.tsx:Cart',message:'Cart pricing snapshot',data:{subtotal,discount,shipping,tax,total,promoCode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-  }, [subtotal, discount, shipping, tax, total, promoCode]);
+
 
   if (items.length === 0) {
     return (
@@ -319,7 +316,7 @@ const Cart = () => {
                     <span>Subtotal</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
-                  
+
                   {/* Discount Line */}
                   <AnimatePresence>
                     {discount > 0 && (
@@ -334,7 +331,7 @@ const Cart = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  
+
                   <div className="flex justify-between text-muted-foreground">
                     <span>Shipping</span>
                     <span>

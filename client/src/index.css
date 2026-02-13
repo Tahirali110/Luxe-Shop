@@ -89,7 +89,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    @apply bg-background text-foreground font-body antialiased overflow-x-hidden;
     font-family: var(--font-body);
   }
 
@@ -146,5 +146,12 @@
 
   .font-body {
     font-family: var(--font-body);
+  }
+}
+
+/* Admin layout: force no margin on mobile to prevent sidebar push overflow */
+@media (max-width: 1023px) {
+  .admin-main-content {
+    margin-left: 0 !important;
   }
 }

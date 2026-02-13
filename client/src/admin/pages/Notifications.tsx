@@ -113,10 +113,10 @@ const Notifications = () => {
     };
 
     return (
-        <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Notifications</h1>
                     <p className="text-muted-foreground mt-1">Manage all your store notifications and alerts.</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ const Notifications = () => {
             </div>
 
             <Tabs defaultValue="all" className="w-full" onValueChange={(v) => setFilter(v as any)}>
-                <TabsList className="bg-muted/50 p-1">
+                <TabsList className="bg-muted/50 p-1 w-full overflow-x-auto no-scrollbar flex">
                     <TabsTrigger value="all" className="rounded-md">All</TabsTrigger>
                     <TabsTrigger value="unread" className="rounded-md relative">
                         Unread
@@ -170,7 +170,7 @@ const Notifications = () => {
                                         {getIcon(notif.type)}
                                     </div>
 
-                                    <div className="flex-1 min-w-0 pr-12">
+                                    <div className="flex-1 min-w-0 pr-16 sm:pr-12">
                                         <div className="flex items-center gap-2 mb-1">
                                             <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
                                                 {notif.type}
@@ -190,7 +190,7 @@ const Notifications = () => {
                                         </h3>
                                     </div>
 
-                                    <div className="absolute top-4 right-4 flex items-center gap-1">
+                                    <div className="absolute top-4 right-2 sm:right-4 flex items-center gap-0.5 sm:gap-1">
                                         {!notif.isRead && (
                                             <Button
                                                 variant="ghost"

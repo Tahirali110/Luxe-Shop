@@ -357,7 +357,7 @@ const Orders = () => {
         />
       ) : (
         <>
-          <div className="rounded-xl border border-border overflow-hidden">
+          <div className="rounded-xl border border-border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -432,7 +432,7 @@ const Orders = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="opacity-100"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>

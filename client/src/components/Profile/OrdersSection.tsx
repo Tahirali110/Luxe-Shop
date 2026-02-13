@@ -489,15 +489,15 @@ export const OrdersSection = () => {
 
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="flex overflow-x-auto pb-2 sm:pb-0 no-scrollbar gap-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           {(['All', 'Processing', 'Shipped', 'Delivered'] as OrderStatus[]).map((status) => (
             <Button
               key={status}
               variant={statusFilter === status ? 'default' : 'outline'}
               size="sm"
               onClick={() => setStatusFilter(status)}
-              className="capitalize"
+              className="capitalize whitespace-nowrap"
             >
               {status === 'All' ? (
                 <>
@@ -511,20 +511,19 @@ export const OrdersSection = () => {
           ))}
         </div>
 
-        <div className="flex flex-1 items-center gap-2 ml-auto min-w-[200px]">
+        <div className="flex flex-1 items-center gap-2 sm:ml-auto">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by ID or product..."
+              placeholder="Search orders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-9 bg-background/50 border-border/50 focus-visible:ring-1"
             />
           </div>
           <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-muted-foreground hidden sm:block" />
             <Select value={dateFilter} onValueChange={(val) => setDateFilter(val as DateFilter)}>
-              <SelectTrigger className="w-[130px] h-9">
+              <SelectTrigger className="w-[110px] sm:w-[130px] h-9">
                 <SelectValue placeholder="Date range" />
               </SelectTrigger>
               <SelectContent>
@@ -559,7 +558,7 @@ export const OrdersSection = () => {
                 variants={fadeUp}
                 className="bg-card rounded-2xl border border-border overflow-hidden"
               >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-semibold">{formatOrderId(order._id)}</h3>
@@ -600,7 +599,7 @@ export const OrdersSection = () => {
                               {step === 'Delivered' && <CheckCircle size={14} />}
                             </motion.div>
                             <div className="flex flex-col items-center mt-2">
-                              <span className={`text-[10px] sm:text-xs capitalize font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              <span className={`text-[10px] sm:text-xs capitalize font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'} ${isCurrent ? 'block' : 'hidden sm:block'}`}>
                                 {step}
                               </span>
                             </div>

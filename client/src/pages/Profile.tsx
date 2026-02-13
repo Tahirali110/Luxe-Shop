@@ -184,14 +184,14 @@ const Profile = () => {
       case 'profile':
         return (
           <motion.div variants={fadeUp} initial="hidden" animate="visible" className="space-y-6">
-            <div className="flex items-start justify-between p-6 bg-card rounded-2xl border border-border">
-              <div className="flex items-center gap-6">
-                <div className="relative group">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 sm:p-6 bg-card rounded-2xl border border-border">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                <div className="relative group flex-shrink-0">
                   <img
                     src={isEditing ? editFormData.avatar : userData.avatar}
                     alt={userData.name}
                     className={cn(
-                      "w-20 h-20 rounded-2xl object-cover transition-all",
+                      "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover transition-all",
                       isEditing && "cursor-pointer hover:opacity-80"
                     )}
                     onClick={() => isEditing && fileInputRef.current?.click()}
@@ -200,7 +200,7 @@ const Profile = () => {
                     <div
                       className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl cursor-pointer pointer-events-none group-hover:bg-black/60 transition-colors"
                     >
-                      <Camera size={24} className="text-white" />
+                      <Camera size={20} className="text-white" />
                     </div>
                   )}
                   <input
@@ -211,10 +211,10 @@ const Profile = () => {
                     onChange={handleImageChange}
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0 text-center sm:text-left">
                   {isEditing ? (
-                    <div className="space-y-4">
-                      <div className="grid gap-2">
+                    <div className="space-y-3">
+                      <div className="grid gap-1.5">
                         <Label htmlFor="name">Full Name</Label>
                         <Input
                           id="name"
@@ -224,7 +224,7 @@ const Profile = () => {
                         />
                         {formErrors.name && <p className="text-xs text-destructive">{formErrors.name}</p>}
                       </div>
-                      <div className="grid gap-2">
+                      <div className="grid gap-1.5">
                         <Label htmlFor="email">Email</Label>
                         <Input
                           id="email"
@@ -235,7 +235,7 @@ const Profile = () => {
                         />
                         {formErrors.email && <p className="text-xs text-destructive">{formErrors.email}</p>}
                       </div>
-                      <div className="grid gap-2">
+                      <div className="grid gap-1.5">
                         <Label htmlFor="phone">Phone</Label>
                         <Input
                           id="phone"
@@ -246,16 +246,16 @@ const Profile = () => {
                     </div>
                   ) : (
                     <>
-                      <h2 className="font-display text-2xl font-bold">{userData.name}</h2>
-                      <p className="text-muted-foreground">{userData.email}</p>
+                      <h2 className="font-display text-xl sm:text-2xl font-bold truncate">{userData.name}</h2>
+                      <p className="text-muted-foreground text-sm truncate">{userData.email}</p>
                       <p className="text-sm text-muted-foreground">{userData.phone}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Member since {userData.memberSince}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Member since {userData.memberSince}</p>
                     </>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 justify-center sm:justify-end flex-shrink-0">
                 {isEditing ? (
                   <>
                     <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
@@ -276,8 +276,8 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="p-5 bg-card rounded-2xl border border-border">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="p-4 sm:p-5 bg-card rounded-2xl border border-border">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <MapPin size={18} className="text-primary" />
@@ -293,7 +293,7 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground italic">No address saved yet</p>
                 )}
               </div>
-              <div className="p-5 bg-card rounded-2xl border border-border">
+              <div className="p-4 sm:p-5 bg-card rounded-2xl border border-border">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Clock size={18} className="text-primary" />
@@ -381,14 +381,56 @@ const Profile = () => {
   };
 
   return (
-    <motion.div variants={pageTransition} initial="initial" animate="animate" exit="exit" className="min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
+    <motion.div variants={pageTransition} initial="initial" animate="animate" exit="exit" className="min-h-screen overflow-x-hidden">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
+        <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Mobile Navigation (Visible on small screens) */}
+          <div className="lg:hidden">
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src={userData.avatar}
+                alt={userData.name}
+                className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-sm truncate">{userData.name}</h3>
+                <p className="text-xs text-muted-foreground">Premium Member</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0 text-destructive"
+                onClick={() => setShowLogoutModal(true)}
+              >
+                <LogOut size={18} />
+              </Button>
+            </div>
+
+            {/* Dropdown Navigation */}
+            <div className="relative mb-2">
+              <select
+                value={activeSection}
+                onChange={(e) => {
+                  setSearchParams({ tab: e.target.value });
+                  setIsEditing(false);
+                }}
+                className="w-full appearance-none bg-card border border-border rounded-xl px-4 py-3 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+              >
+                {menuItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Desktop Sidebar (Hidden on small screens) */}
           <motion.aside
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
+            className="hidden lg:block lg:col-span-1"
           >
             <div className="sticky top-24 p-6 bg-card/50 backdrop-blur-xl rounded-3xl border border-border/50 shadow-xl">
               {/* User Info */}
@@ -411,7 +453,7 @@ const Profile = () => {
                     key={item.id}
                     onClick={() => {
                       setSearchParams({ tab: item.id });
-                      setIsEditing(false); // Reset editing state when switching tabs
+                      setIsEditing(false);
                     }}
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.98 }}
@@ -444,10 +486,10 @@ const Profile = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-3"
+            className="lg:col-span-3 min-w-0 overflow-hidden"
           >
-            <div className="mb-6">
-              <h1 className="font-display text-3xl font-bold">
+            <div className="mb-4 lg:mb-6">
+              <h1 className="font-display text-2xl lg:text-3xl font-bold">
                 {menuItems.find((m) => m.id === activeSection)?.label || 'Profile'}
               </h1>
             </div>

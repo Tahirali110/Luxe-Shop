@@ -112,7 +112,7 @@ const Analytics = () => {
         .slice(0, 5);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <PageHeader
                     title="Analytics"
@@ -231,7 +231,7 @@ const Analytics = () => {
                                 <Tooltip />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="flex justify-center gap-6 mb-4">
+                        <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-4">
                             {categoryData.map((entry, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <div
@@ -247,7 +247,7 @@ const Analytics = () => {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-                <Card className="col-span-2">
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Recent Transactions</CardTitle>
                         <CardDescription>Latest financial activity</CardDescription>

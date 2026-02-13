@@ -143,7 +143,7 @@ export const AddressManager = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`relative p-6 bg-card rounded-2xl border transition-all ${address.isDefault ? 'border-primary ring-1 ring-primary/20' : 'border-border'
+            className={`relative p-4 sm:p-6 bg-card rounded-2xl border transition-all ${address.isDefault ? 'border-primary ring-1 ring-primary/20' : 'border-border'
               }`}
           >
             {address.isDefault && (

@@ -118,6 +118,7 @@ const ProductGrid = ({ searchQuery }: ProductGridProps) => {
                   key={product._id}
                   product={product}
                   index={index}
+                  priority={index < 4}
                 />
               ))
             )}

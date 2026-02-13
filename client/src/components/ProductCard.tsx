@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button';
 interface ProductCardProps {
   product: Product;
   index?: number;
+  priority?: boolean;
 }
 
-const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, index = 0 }, ref) => {
+const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, index = 0, priority = false }, ref) => {
   const { addItem, updateQuantity, items } = useCartStore();
   const { isInWishlist, toggleItem } = useWishlistStore();
   const [selectedColor] = useState(product.colors && product.colors.length > 0 ? product.colors[0] : { name: 'Default', hex: '#000000', image: product.image || '' });
@@ -75,7 +76,12 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(({ product, ind
       <Link to={`/product/${productId}`}>
         <div className={`bg-card rounded-2xl overflow-hidden border border-border/50 hover:shadow-xl transition-all duration-300 product-card-glow dark:hover:border-border ${product.stock === 0 ? 'opacity-75 grayscale-[0.3]' : ''}`}>
           <div className="aspect-square overflow-hidden bg-secondary">
-            <img src={selectedColor.image} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <img
+              src={selectedColor.image}
+              alt={product.name}
+              loading={priority ? "eager" : "lazy"}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
           </div>
           <div className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">{product.category}</p>

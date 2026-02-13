@@ -181,7 +181,7 @@ const Reviews = () => {
                 </div>
             </div>
 
-            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border shadow-sm overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>

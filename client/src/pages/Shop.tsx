@@ -274,7 +274,12 @@ const Shop = () => {
                       ))
                     ) : (
                       paginatedProducts.map((product, index) => (
-                        <ProductCard key={product._id} product={product} index={index} />
+                        <ProductCard
+                          key={product._id}
+                          product={product}
+                          index={index}
+                          priority={index < 4}
+                        />
                       ))
                     )}
                   </motion.div>

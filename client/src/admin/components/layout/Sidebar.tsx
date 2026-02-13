@@ -14,6 +14,7 @@ import {
   Crown,
   Bell,
   MessageSquare,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,20 +36,22 @@ const navItems = [
 
 const Sidebar = () => {
   const location = useLocation();
-  const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
   const { logout, admin } = useAuthStore();
 
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: sidebarCollapsed ? 80 : 280 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 z-40 h-screen bg-card border-r border-border flex flex-col"
-    >
+  const handleNavClick = () => {
+    // Auto-close sidebar on mobile when a nav link is clicked
+    if (mobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  const sidebarContent = (collapsed: boolean) => (
+    <>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         <AnimatePresence mode="wait">
-          {!sidebarCollapsed && (
+          {!collapsed && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -60,7 +63,7 @@ const Sidebar = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        {sidebarCollapsed && (
+        {collapsed && (
           <Crown className="h-8 w-8 text-primary mx-auto" />
         )}
       </div>
@@ -74,6 +77,7 @@ const Sidebar = () => {
           const linkContent = (
             <Link
               to={item.path}
+              onClick={handleNavClick}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
                 isActive
@@ -83,7 +87,7 @@ const Sidebar = () => {
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
               <AnimatePresence mode="wait">
-                {!sidebarCollapsed && (
+                {!collapsed && (
                   <motion.span
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: 'auto' }}
@@ -97,7 +101,7 @@ const Sidebar = () => {
             </Link>
           );
 
-          if (sidebarCollapsed) {
+          if (collapsed) {
             return (
               <Tooltip key={item.path} delayDuration={0}>
                 <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
@@ -116,7 +120,7 @@ const Sidebar = () => {
       <div className="border-t border-border p-3 space-y-2">
         {/* User info */}
         <AnimatePresence mode="wait">
-          {!sidebarCollapsed && admin && (
+          {!collapsed && admin && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -136,24 +140,24 @@ const Sidebar = () => {
               variant="ghost"
               className={cn(
                 'w-full justify-start text-muted-foreground hover:text-destructive',
-                sidebarCollapsed && 'justify-center px-0'
+                collapsed && 'justify-center px-0'
               )}
               onClick={logout}
             >
               <LogOut className="h-5 w-5" />
-              {!sidebarCollapsed && <span className="ml-3">Logout</span>}
+              {!collapsed && <span className="ml-3">Logout</span>}
             </Button>
           </TooltipTrigger>
-          {sidebarCollapsed && (
+          {collapsed && (
             <TooltipContent side="right">Logout</TooltipContent>
           )}
         </Tooltip>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle (desktop only) */}
         <Button
           variant="outline"
           size="sm"
-          className="w-full"
+          className="w-full hidden lg:flex"
           onClick={toggleSidebar}
         >
           {sidebarCollapsed ? (
@@ -166,7 +170,56 @@ const Sidebar = () => {
           )}
         </Button>
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarCollapsed ? 80 : 280 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="fixed left-0 top-0 z-40 h-screen bg-card border-r border-border flex-col hidden lg:flex"
+      >
+        {sidebarContent(sidebarCollapsed)}
+      </motion.aside>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            {/* Sidebar panel */}
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="fixed left-0 top-0 z-50 h-screen w-[280px] bg-card border-r border-border flex flex-col lg:hidden"
+            >
+              {/* Close button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-3 z-10"
+                onClick={() => setMobileSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              {sidebarContent(false)}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

@@ -28,7 +28,7 @@ import { AdminSmartSearch } from '@/admin/components/shared/AdminSmartSearch';
 const Header = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { toggleSidebar } = useUIStore();
+  const { toggleMobileSidebar } = useUIStore();
   const { admin, logout } = useAuthStore();
   const [notifications, setNotifications] = useState<NotifType[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
@@ -97,14 +97,14 @@ const Header = () => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-6">
+    <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-lg border-b border-border flex items-center justify-between px-4 sm:px-6">
       {/* Left side */}
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
-          onClick={toggleSidebar}
+          className="lg:hidden flex-shrink-0"
+          onClick={toggleMobileSidebar}
         >
           <Menu className="h-5 w-5" />
         </Button>

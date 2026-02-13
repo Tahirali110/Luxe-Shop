@@ -169,8 +169,8 @@ const Contact = () => {
                       whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
                       whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
                       className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold transition-all ${isSubmitting
-                          ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                          : 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                        ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                        : 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
                         }`}
                     >
                       {isSubmitting ? (
@@ -269,7 +269,7 @@ const Contact = () => {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Store Location"
-              className="grayscale hover:grayscale-0 transition-all duration-500"
+              className="grayscale-0 lg:grayscale lg:hover:grayscale-0 transition-all duration-500"
             />
           </motion.div>
         </div>

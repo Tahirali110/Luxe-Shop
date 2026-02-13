@@ -643,7 +643,7 @@ const ProductDetail = () => {
                 <motion.h2 variants={fadeUp} className="font-display text-2xl lg:text-3xl font-bold">
                   You Might Also Like
                 </motion.h2>
-                <div className="flex gap-2">
+                <div className="hidden lg:flex gap-2">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -664,14 +664,14 @@ const ProductDetail = () => {
                   </motion.button>
                 </div>
               </div>
-              <div className="overflow-hidden">
+              <div className="overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
                 <motion.div
-                  className="flex gap-6"
-                  animate={{ x: -relatedScrollIndex * (100 / 4 + 1.5) + '%' }}
+                  className="flex lg:grid lg:grid-cols-4 gap-4 lg:gap-6 min-w-max lg:min-w-0"
+                  animate={window.innerWidth >= 1024 ? { x: -relatedScrollIndex * (100 / 4 + 1.5) + '%' } : {}}
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 >
                   {relatedProducts.map((item, index) => (
-                    <div key={item._id} className="w-[calc(25%-18px)] flex-shrink-0">
+                    <div key={item._id} className="w-[160px] sm:w-[200px] lg:w-auto flex-shrink-0">
                       <ProductCard product={item} index={index} />
                     </div>
                   ))}
