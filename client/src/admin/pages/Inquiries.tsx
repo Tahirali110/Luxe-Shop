@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAdminSearch } from '@/hooks/useAdminSearch';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     MessageSquare,
@@ -76,15 +77,16 @@ const Inquiries = () => {
         }
     };
 
-    const filteredMessages = messages.filter(m => {
-        const matchesSearch =
-            m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.subject.toLowerCase().includes(searchQuery.toLowerCase());
+    // Trie-based prefix search — O(m) per query, O(1) for repeated queries via Map cache
+    const getInquiryTokens = useCallback(
+        (m: ContactMessage) => [m.name, m.email, m.subject],
+        []
+    );
+    const searchedMessages = useAdminSearch(messages, searchQuery, getInquiryTokens);
 
+    const filteredMessages = searchedMessages.filter(m => {
         const matchesFilter = filter === 'all' || m.type === filter;
-
-        return matchesSearch && matchesFilter;
+        return matchesFilter;
     });
 
     return (

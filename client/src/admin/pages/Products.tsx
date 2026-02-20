@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAdminSearch } from '@/hooks/useAdminSearch';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -104,19 +105,17 @@ const Products = () => {
     setCurrentPage(1);
   }, [searchQuery, categoryFilter, stockFilter]);
 
+  // Trie-based prefix search — O(m) per query, O(1) for repeated queries via Map cache
+  const getProductTokens = useCallback(
+    (p: Product) => [p.name, p.description],
+    []
+  );
+  const searchedProducts = useAdminSearch(products, searchQuery, getProductTokens);
+
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let result = [...products];
+    let result = [...searchedProducts];
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query)
-      );
-    }
 
     // Category filter
     if (categoryFilter !== 'all') {
@@ -176,7 +175,7 @@ const Products = () => {
     });
 
     return result;
-  }, [products, searchQuery, categoryFilter, stockFilter, sortBy]);
+  }, [searchedProducts, categoryFilter, stockFilter, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);

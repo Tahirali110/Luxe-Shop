@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAdminSearch } from '@/hooks/useAdminSearch';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -170,20 +171,20 @@ const Orders = () => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, paymentFilter]);
 
-  const filteredOrders = useMemo(() => {
-    let result = [...orders];
+  // Trie-based prefix search — O(m) per query, O(1) for repeated queries via Map cache
+  const getOrderTokens = useCallback(
+    (o: Order) => [
+      o._id,
+      formatOrderId(o._id),
+      o.customerName ?? '',
+      o.customerEmail ?? '',
+    ],
+    []
+  );
+  const searchedOrders = useAdminSearch(orders, searchQuery, getOrderTokens);
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (o) =>
-          o._id.toLowerCase().includes(query) ||
-          formatOrderId(o._id).toLowerCase().includes(query) ||
-          o.customerName?.toLowerCase().includes(query) ||
-          o.customerEmail?.toLowerCase().includes(query)
-      );
-    }
+  const filteredOrders = useMemo(() => {
+    let result = [...searchedOrders];
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -212,7 +213,7 @@ const Orders = () => {
     });
 
     return result;
-  }, [orders, searchQuery, statusFilter, paymentFilter, sortBy]);
+  }, [searchedOrders, statusFilter, paymentFilter, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);

@@ -256,6 +256,11 @@ export const OrdersSection = () => {
     fetchOrders(); // Fetch real orders from backend
   }, [fetchOrders]);
 
+  // Helper to format order ID — must be declared before the useMemo that uses it
+  const formatOrderId = (id: string) => {
+    return `#${id.slice(-8).toUpperCase()}`;
+  };
+
   // Filter logic
   const filteredOrders = useMemo(() => {
     let result = [...orders];
@@ -482,10 +487,6 @@ export const OrdersSection = () => {
     );
   }
 
-
-  const formatOrderId = (id: string) => {
-    return `#${id.slice(-8).toUpperCase()}`;
-  };
 
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">

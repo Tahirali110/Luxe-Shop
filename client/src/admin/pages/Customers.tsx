@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAdminSearch } from '@/hooks/useAdminSearch';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -108,17 +109,17 @@ const Customers = () => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  const filteredUsers = useMemo(() => {
-    let result = users.filter((u) => !u.isAdmin); // Only show customers, not admins
+  // Trie-based prefix search — O(m) per query, O(1) for repeated queries via Map cache
+  const getUserTokens = useCallback(
+    (u: User) => [u.name, u.email],
+    []
+  );
+  // Only search among non-admin users
+  const nonAdminUsers = useMemo(() => users.filter(u => !u.isAdmin), [users]);
+  const searchedUsers = useAdminSearch(nonAdminUsers, searchQuery, getUserTokens);
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (u) =>
-          u.name.toLowerCase().includes(query) ||
-          u.email.toLowerCase().includes(query)
-      );
-    }
+  const filteredUsers = useMemo(() => {
+    let result = [...searchedUsers];
 
     result.sort((a, b) => {
       switch (sortBy) {
@@ -136,7 +137,7 @@ const Customers = () => {
     });
 
     return result;
-  }, [users, searchQuery, sortBy]);
+  }, [searchedUsers, sortBy]);
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(

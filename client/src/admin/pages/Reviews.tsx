@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAdminSearch } from '@/hooks/useAdminSearch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Check, X, Search, Filter, MoreHorizontal, MessageSquare, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,18 +93,20 @@ const Reviews = () => {
         }
     };
 
-    const filteredReviews = reviews.filter(review => {
-        const matchesSearch =
-            review.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            review.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            review.productName.toLowerCase().includes(searchQuery.toLowerCase());
+    // Trie-based prefix search — O(m) per query, O(1) for repeated queries via Map cache
+    const getReviewTokens = useCallback(
+        (r: ExtendedReview) => [r.userName, r.comment, r.productName],
+        []
+    );
+    const searchedReviews = useAdminSearch(reviews, searchQuery, getReviewTokens);
 
-        const matchesStatus = true;
-
-        const matchesRating = ratingFilter === 'all' || Math.floor(review.rating).toString() === ratingFilter;
-
-        return matchesSearch && matchesStatus && matchesRating;
-    });
+    const filteredReviews = useMemo(() =>
+        searchedReviews.filter(review => {
+            const matchesRating = ratingFilter === 'all' || Math.floor(review.rating).toString() === ratingFilter;
+            return matchesRating;
+        }),
+        [searchedReviews, ratingFilter]
+    );
 
     const handleDeleteReview = async (reviewId: string, productId: string) => {
         if (!window.confirm('Are you sure you want to delete this review?')) return;
