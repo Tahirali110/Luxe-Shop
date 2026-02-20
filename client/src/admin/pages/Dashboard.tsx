@@ -423,6 +423,7 @@ const Dashboard = () => {
                     <img
                       src={product.colors[0]?.image || '/placeholder.svg'}
                       alt={product.name}
+                      loading="lazy"
                       className="h-12 w-12 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">

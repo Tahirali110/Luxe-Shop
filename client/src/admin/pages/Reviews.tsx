@@ -223,6 +223,7 @@ const Reviews = () => {
                                                 <img
                                                     src={review.productImage}
                                                     alt={review.productName}
+                                                    loading="lazy"
                                                     className="h-full w-full object-cover"
                                                 />
                                             </div>

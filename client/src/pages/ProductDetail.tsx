@@ -304,6 +304,7 @@ const ProductDetail = () => {
                 <img
                   src={activeImage}
                   alt={product.name}
+                  loading="lazy"
                   className="w-full h-full object-cover transition-opacity duration-300"
                   onLoad={(e) => {
                     const img = e.currentTarget;
@@ -383,7 +384,7 @@ const ProductDetail = () => {
                       className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImageIndex === index ? 'border-primary shadow-md' : 'border-transparent opacity-70 hover:opacity-100'
                         }`}
                     >
-                      <img src={img} alt={`${product.name} view ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={img} alt={`${product.name} view ${index + 1}`} loading="lazy" className="w-full h-full object-cover" />
                     </motion.button>
                   ))}
                 </div>

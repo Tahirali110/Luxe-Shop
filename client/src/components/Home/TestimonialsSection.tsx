@@ -107,6 +107,7 @@ const TestimonialsSection = () => {
                 <img
                   src={testimonials[currentIndex].avatar}
                   alt={testimonials[currentIndex].name}
+                  loading="lazy"
                   className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/20"
                 />
                 <div className="text-center lg:text-left">
@@ -193,6 +194,7 @@ const TestimonialsSection = () => {
                 <img
                   src={testimonial.avatar}
                   alt={testimonial.name}
+                  loading="lazy"
                   className="w-10 h-10 rounded-full object-cover"
                 />
                 <div>

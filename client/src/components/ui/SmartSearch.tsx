@@ -280,6 +280,7 @@ export const SmartSearch = ({ onClose, isMobile = false }: SmartSearchProps) => 
                       <img
                         src={getProductImage(product)}
                         alt={product.name}
+                        loading="lazy"
                         className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">

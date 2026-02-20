@@ -165,7 +165,7 @@ export const AdminSmartSearch = () => {
                                                     className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-muted/80 transition-all text-left group"
                                                 >
                                                     <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                                        <img src={product.colors?.[0]?.image || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+                                                        <img src={product.colors?.[0]?.image || '/placeholder.svg'} alt="" loading="lazy" className="h-full w-full object-cover" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center justify-between gap-2">

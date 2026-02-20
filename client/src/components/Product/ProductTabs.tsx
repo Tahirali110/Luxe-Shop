@@ -229,6 +229,7 @@ export const ProductTabs = ({ description, details, reviews, avgRating, totalRev
                         <img
                           src={img.startsWith('http') || img.startsWith('data:') ? img : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${img}`}
                           alt={`Review image ${i + 1}`}
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                       </motion.div>

@@ -49,89 +49,6 @@ import { Order, OrderStatus, PaymentStatus } from '@/admin/types';
 import { formatCurrency, formatDate, formatOrderId } from '@/admin/utils/formatters';
 import { toast } from 'sonner';
 
-// Mock data for fallback
-const mockOrders: Order[] = [
-  {
-    _id: '507f1f77bcf86cd799439011',
-    user: 'user1',
-    customerName: 'John Doe',
-    customerEmail: 'john@example.com',
-    items: [
-      { productId: '1', name: 'Premium Watch', quantity: 1, price: 299, image: '/placeholder.svg' },
-      { productId: '2', name: 'Leather Wallet', quantity: 2, price: 89, image: '/placeholder.svg' },
-    ],
-    shippingAddress: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '+1234567890',
-      addressLine1: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'USA',
-    },
-    paymentMethod: 'Credit Card',
-    paymentStatus: 'Completed',
-    orderStatus: 'Processing',
-    totals: { subtotal: 477, tax: 42.93, shipping: 10, total: 529.93 },
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: '507f1f77bcf86cd799439012',
-    user: 'user2',
-    customerName: 'Jane Smith',
-    customerEmail: 'jane@example.com',
-    items: [
-      { productId: '3', name: 'Designer Bag', quantity: 1, price: 899, image: '/placeholder.svg' },
-    ],
-    shippingAddress: {
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane@example.com',
-      phone: '+1987654321',
-      addressLine1: '456 Oak Ave',
-      city: 'Los Angeles',
-      state: 'CA',
-      zipCode: '90001',
-      country: 'USA',
-    },
-    paymentMethod: 'UPI',
-    paymentStatus: 'Completed',
-    orderStatus: 'Shipped',
-    totals: { subtotal: 899, tax: 80.91, shipping: 0, total: 979.91 },
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    _id: '507f1f77bcf86cd799439013',
-    user: 'user3',
-    customerName: 'Bob Wilson',
-    customerEmail: 'bob@example.com',
-    items: [
-      { productId: '4', name: 'Wireless Earbuds', quantity: 1, price: 249, image: '/placeholder.svg' },
-    ],
-    shippingAddress: {
-      firstName: 'Bob',
-      lastName: 'Wilson',
-      email: 'bob@example.com',
-      phone: '+1555555555',
-      addressLine1: '789 Pine Rd',
-      city: 'Chicago',
-      state: 'IL',
-      zipCode: '60601',
-      country: 'USA',
-    },
-    paymentMethod: 'COD',
-    paymentStatus: 'Pending',
-    orderStatus: 'Placed',
-    totals: { subtotal: 249, tax: 22.41, shipping: 10, total: 281.41 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 const Orders = () => {
   const navigate = useNavigate();
   const { admin } = useAuthStore();
@@ -160,8 +77,8 @@ const Orders = () => {
       const data = await orderService.getAll();
       setOrders(data);
     } catch (error) {
-      // Use mock data as fallback
-      setOrders(mockOrders);
+      toast.error('Failed to load orders');
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }

@@ -43,155 +43,6 @@ type OrderStatus = 'All' | 'Placed' | 'Processing' | 'Shipped' | 'Delivered' | '
 
 const orderStatusSteps = ['Placed', 'Processing', 'Shipped', 'Delivered'];
 
-// Mock orders with hardcoded values to remove dependency on mockData.ts
-const mockOrdersData = [
-  {
-    id: 'ORD-001',
-    date: '2026-01-25',
-    placedAt: '2026-01-25 10:30 AM',
-    paymentConfirmedAt: '2026-01-25 10:35 AM',
-    status: 'delivered' as const,
-    shippingFee: 10,
-    items: [
-      {
-        id: 'mock-1', name: 'Premium Wireless Headphones', price: 299.99, quantity: 1,
-        selectedColor: 'Black', selectedSize: 'M',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'
-      },
-      {
-        id: 'mock-2', name: 'Smart Fitness Watch', price: 199.99, quantity: 1,
-        selectedColor: 'Navy', selectedSize: 'L',
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
-      },
-    ],
-    shippingAddress: {
-      label: 'Home',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '1234567890',
-      address: '123 Fashion Street',
-      apartment: 'Apt 4B',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'United States',
-    },
-    shippingMethodName: 'Standard Shipping',
-    estimatedDelivery: '2026-01-28',
-    paymentMethod: 'Credit Card (**** 4242)',
-    trackingNumber: '1Z999AA10123456784',
-  },
-  {
-    id: 'ORD-002',
-    date: '2025-12-20',
-    placedAt: '2025-12-20 03:15 PM',
-    paymentConfirmedAt: '2025-12-20 03:20 PM',
-    status: 'shipped' as const,
-    shippingFee: 15,
-    items: [
-      {
-        id: 'mock-3', name: 'Ergonomic Office Chair', price: 249.99, quantity: 2,
-        selectedColor: 'White', selectedSize: 'S',
-        image: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=500'
-      },
-    ],
-    shippingAddress: {
-      label: 'Office',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '1234567890',
-      address: '123 Fashion Street',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      apartment: '',
-      country: 'United States',
-    },
-    shippingMethodName: 'Express Shipping',
-    estimatedDelivery: '2025-12-23',
-    paymentMethod: 'PayPal',
-    trackingNumber: '1Z999AA10123456785',
-  },
-  {
-    id: 'ORD-003',
-    date: '2025-05-15',
-    placedAt: '2025-05-15 09:00 AM',
-    paymentConfirmedAt: '2025-05-15 09:05 AM',
-    status: 'processing' as const,
-    shippingFee: 0,
-    items: [
-      {
-        id: 'mock-4', name: 'Premium Sunglasses', price: 159.99, quantity: 1,
-        selectedColor: 'Gray', selectedSize: 'XL',
-        image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500'
-      },
-    ],
-    shippingAddress: {
-      label: 'Home',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '1234567890',
-      address: '456 Business Ave',
-      city: 'Los Angeles',
-      state: 'CA',
-      zipCode: '90001',
-      apartment: '',
-      country: 'United States',
-    },
-    shippingMethodName: 'Free Shipping',
-    estimatedDelivery: '2025-05-20',
-    paymentMethod: 'Apple Pay',
-    trackingNumber: null,
-  },
-];
-
-const mockOrders: Order[] = mockOrdersData.map(order => {
-  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08; // 8% Tax
-  const total = subtotal + tax + order.shippingFee;
-
-  const { shippingFee, items, shippingAddress, status, ...rest } = order;
-
-  return {
-    ...rest,
-    _id: order.id,
-    user: 'mock-user-id',
-    paymentStatus: 'paid',
-    orderStatus: (status.charAt(0).toUpperCase() + status.slice(1)) as any,
-    createdAt: order.date,
-    items: items.map(item => ({
-      productId: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      selectedColor: item.selectedColor,
-      selectedSize: item.selectedSize,
-      image: item.image
-    })),
-    shippingAddress: {
-      firstName: shippingAddress.firstName,
-      lastName: shippingAddress.lastName,
-      email: shippingAddress.email,
-      phone: shippingAddress.phone,
-      addressLine1: shippingAddress.address,
-      addressLine2: shippingAddress.apartment,
-      city: shippingAddress.city,
-      state: shippingAddress.state,
-      zipCode: shippingAddress.zipCode,
-      country: shippingAddress.country
-    },
-    totals: {
-      subtotal,
-      tax,
-      shipping: shippingFee,
-      total
-    }
-  };
-});
-
 type DateFilter = 'all' | 'last30' | 'last6months' | 'last12months' | 'thisYear';
 
 import { useAuthStore } from '@/store/useAuthStore';
@@ -624,6 +475,7 @@ export const OrdersSection = () => {
                         <img
                           src={item.image}
                           alt={item.name}
+                          loading="lazy"
                           className="w-16 h-16 rounded-xl object-cover"
                         />
                         {item.quantity > 1 && (
@@ -690,6 +542,7 @@ export const OrdersSection = () => {
                                     <img
                                       src={item.image || ''}
                                       alt={item.name || 'Product'}
+                                      loading="lazy"
                                       className="w-16 h-16 rounded-lg object-cover bg-secondary"
                                     />
                                     <div className="flex-1 min-w-0">

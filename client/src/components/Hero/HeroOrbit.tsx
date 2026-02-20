@@ -54,6 +54,7 @@ const HeroOrbit = () => {
             <img
               src={mainImage}
               alt="Featured product"
+              loading="lazy"
               className="w-full h-full object-cover"
             />
           </motion.div>
@@ -101,6 +102,7 @@ const HeroOrbit = () => {
                 <img
                   src={productImage}
                   alt={product.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </div>

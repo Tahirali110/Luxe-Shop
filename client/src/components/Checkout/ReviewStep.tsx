@@ -130,7 +130,7 @@ export const ReviewStep = ({ onBack, onPlaceOrder, isProcessing, onEditStep }: R
           {items.map((item) => (
             <div key={item.id} className="flex gap-4">
               <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-secondary flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-background text-xs font-semibold rounded-full flex items-center justify-center">
                   {item.quantity}
                 </span>

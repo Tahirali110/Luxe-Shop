@@ -200,7 +200,7 @@ const ReviewModal = ({ isOpen, onClose, productId, productName, orderId, onSucce
                                         exit={{ opacity: 0, scale: 0.8 }}
                                         className="relative w-20 h-20 rounded-xl overflow-hidden border border-border group"
                                     >
-                                        <img src={src} alt="Existing" className="w-full h-full object-cover" />
+                                        <img src={src} alt="Existing" loading="lazy" className="w-full h-full object-cover" />
                                         <button
                                             onClick={() => removeImage(index, true)}
                                             className="absolute top-1 right-1 bg-background/80 p-1 rounded-full text-foreground/80 hover:bg-background hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
@@ -218,7 +218,7 @@ const ReviewModal = ({ isOpen, onClose, productId, productName, orderId, onSucce
                                         exit={{ opacity: 0, scale: 0.8 }}
                                         className="relative w-20 h-20 rounded-xl overflow-hidden border border-border group"
                                     >
-                                        <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                                        <img src={src} alt="Preview" loading="lazy" className="w-full h-full object-cover" />
                                         <button
                                             onClick={() => removeImage(index, false)}
                                             className="absolute top-1 right-1 bg-background/80 p-1 rounded-full text-foreground/80 hover:bg-background hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"

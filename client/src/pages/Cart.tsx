@@ -65,7 +65,7 @@ const CartItemRow = forwardRef<HTMLDivElement, { item: CartItem }>(({ item }, re
 
       <Link to={`/product/${item.productId}`} className="flex-shrink-0">
         <motion.div whileHover={{ scale: 1.05 }} className="w-24 h-24 lg:w-32 lg:h-32 rounded-2xl overflow-hidden bg-secondary">
-          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+          <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
         </motion.div>
       </Link>
 

@@ -371,6 +371,7 @@ const OrderDetail = () => {
                     <img
                       src={item.image}
                       alt={item.name}
+                      loading="lazy"
                       className="h-16 w-16 rounded-lg object-cover"
                     />
                     <div className="flex-1">

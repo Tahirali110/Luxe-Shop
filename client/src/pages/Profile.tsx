@@ -190,6 +190,7 @@ const Profile = () => {
                   <img
                     src={isEditing ? editFormData.avatar : userData.avatar}
                     alt={userData.name}
+                    loading="lazy"
                     className={cn(
                       "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover transition-all",
                       isEditing && "cursor-pointer hover:opacity-80"
@@ -354,6 +355,7 @@ const Profile = () => {
                   <img
                     src={product.colors?.[0]?.image || product.image}
                     alt={product.name}
+                    loading="lazy"
                     className="w-20 h-20 rounded-xl object-cover"
                   />
                   <div className="flex-1">
@@ -390,6 +392,7 @@ const Profile = () => {
               <img
                 src={userData.avatar}
                 alt={userData.name}
+                loading="lazy"
                 className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
               />
               <div className="min-w-0 flex-1">
@@ -438,6 +441,7 @@ const Profile = () => {
                 <img
                   src={userData.avatar}
                   alt={userData.name}
+                  loading="lazy"
                   className="w-14 h-14 rounded-2xl object-cover"
                 />
                 <div>
