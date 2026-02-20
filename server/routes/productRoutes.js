@@ -8,6 +8,7 @@ const {
     deleteProduct,
     getProducts,
     getProductById,
+    searchProducts,
     createProductReview,
     updateProductReview,
     deleteProductReview,
@@ -18,6 +19,11 @@ const {
 // @route   GET /api/products
 // @access  Public
 router.get('/', getProducts);
+
+// @desc    Search products by text query (must be before /:id to avoid route conflict)
+// @route   GET /api/products/search?q=<query>&limit=<number>
+// @access  Public
+router.get('/search', searchProducts);
 
 // @desc    Get single product by ID
 // @route   GET /api/products/:id

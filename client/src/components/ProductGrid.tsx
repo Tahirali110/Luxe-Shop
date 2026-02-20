@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Product, categories } from '@/types/product';
 import ProductCard from './ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProductSearch } from '@/hooks/useProductSearch';
 
 interface ProductGridProps {
   searchQuery: string;
@@ -36,14 +37,16 @@ const ProductGrid = ({ searchQuery }: ProductGridProps) => {
     fetchProducts();
   }, []);
 
+  // Trie search: O(m) prefix lookup where m = query length.
+  // The Trie is built once when `products` loads, then reused on every keystroke.
+  const searchResults = useProductSearch(products, searchQuery);
+
+  // Apply category filter on top of the Trie search results.
+  // This is a lightweight O(k) pass where k = Trie-matched products (k << n).
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [products, selectedCategory, searchQuery]);
+    if (selectedCategory === 'All') return searchResults;
+    return searchResults.filter((product) => product.category === selectedCategory);
+  }, [searchResults, selectedCategory]);
 
   return (
     <section id="products" className="py-20 lg:py-32">

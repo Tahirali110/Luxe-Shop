@@ -91,6 +91,31 @@ const getProducts = asyncHandler(async (req, res) => {
     res.status(200).json(products);
 });
 
+// @desc    Search products using MongoDB full-text search
+// @route   GET /api/products/search?q=<query>&limit=<number>
+// @access  Public
+const searchProducts = asyncHandler(async (req, res) => {
+    const { q, limit = 5 } = req.query;
+
+    // Require at least 2 characters to avoid overly broad searches
+    if (!q || q.trim().length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters.' });
+    }
+
+    // $text uses the compound text index defined on the Product model.
+    // { score: { $meta: 'textScore' } } projects the relevance score so we can sort by it.
+    // Only select the fields the client actually needs — saves bandwidth.
+    const products = await Product.find(
+        { $text: { $search: q.trim() } },
+        { score: { $meta: 'textScore' } }
+    )
+        .sort({ score: { $meta: 'textScore' } }) // Most relevant results first
+        .limit(Number(limit))
+        .select('name category price colors description badge rating');
+
+    res.status(200).json(products);
+});
+
 // @desc    Get single product by ID
 // @route   GET /api/products/:id
 // @access  Public
@@ -277,6 +302,7 @@ module.exports = {
     deleteProduct,
     getProducts,
     getProductById,
+    searchProducts,
     createProductReview,
     updateProductReview,
     deleteProductReview,

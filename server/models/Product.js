@@ -126,6 +126,16 @@ const productSchema = new mongoose.Schema(
     }
 );
 
+// --- Text Index for fast full-text product search ---
+// Weights determine relevance priority when sorting by textScore.
+// name has the highest weight (10): an exact name match ranks first.
+// category has medium weight (5): searching by category still surfaces results.
+// description has the lowest weight (1): broad keyword matching.
+productSchema.index(
+    { name: 'text', description: 'text', category: 'text' },
+    { weights: { name: 10, category: 5, description: 1 }, name: 'product_text_search' }
+);
+
 const Product = mongoose.model('Product', productSchema);
 
 module.exports = Product;
